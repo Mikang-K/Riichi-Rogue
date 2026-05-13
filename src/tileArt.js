@@ -1,162 +1,55 @@
-const COLS = 7;
-const ROWS = 9;
-
-const numberSpots = {
-  1: [[1, 1]],
-  2: [[0, 0], [2, 2]],
-  3: [[0, 0], [1, 1], [2, 2]],
-  4: [[0, 0], [0, 2], [2, 0], [2, 2]],
-  5: [[0, 0], [0, 2], [1, 1], [2, 0], [2, 2]],
-  6: [[0, 0], [1, 0], [2, 0], [0, 2], [1, 2], [2, 2]],
-  7: [[0, 0], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 2]],
-  8: [[0, 0], [0, 1], [0, 2], [1, 0], [1, 2], [2, 0], [2, 1], [2, 2]],
-  9: [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]],
-};
-
-const honorGlyphs = {
-  E: [
-    ".xxx.",
-    ".x...",
-    ".xxx.",
-    ".x...",
-    ".xxx.",
-    ".....",
-    ".....",
-  ],
-  S: [
-    ".xxx.",
-    ".x...",
-    ".xxx.",
-    "...x.",
-    ".xxx.",
-    ".....",
-    ".....",
-  ],
-  W: [
-    ".x.x.",
-    ".x.x.",
-    ".x.x.",
-    ".xxx.",
-    ".x.x.",
-    ".....",
-    ".....",
-  ],
-  N: [
-    ".x.x.",
-    ".xxx.",
-    ".xxx.",
-    ".xxx.",
-    ".x.x.",
-    ".....",
-    ".....",
-  ],
-  P: [
-    ".xxx.",
-    ".x.x.",
-    ".xxx.",
-    ".x...",
-    ".x...",
-    ".....",
-    ".....",
-  ],
-  F: [
-    ".xxx.",
-    ".x...",
-    ".xxx.",
-    ".x...",
-    ".x...",
-    ".....",
-    ".....",
-  ],
-  C: [
-    ".xxx.",
-    ".x...",
-    ".x...",
-    ".x...",
-    ".xxx.",
-    ".....",
-    ".....",
-  ],
-};
-
-const honorColors = {
-  E: "ink",
-  S: "ink",
-  W: "ink",
-  N: "ink",
-  P: "ink",
-  F: "green",
-  C: "red",
+const tileImageFiles = {
+  m1: "man_1.png",
+  m2: "man_2.png",
+  m3: "man_3.png",
+  m4: "man_4.png",
+  m5: "man_5.png",
+  m6: "man_6.png",
+  m7: "man_7.png",
+  m8: "man_8.png",
+  m9: "man_9.png",
+  p1: "pin_1.png",
+  p2: "pin_2.png",
+  p3: "pin_3.png",
+  p4: "pin_4.png",
+  p5: "pin_5.png",
+  p6: "pin_6.png",
+  p7: "pin_7.png",
+  p8: "pin_8.png",
+  p9: "pin_9.png",
+  s1: "sou_1.png",
+  s2: "sou_2.png",
+  s3: "sou_3.png",
+  s4: "sou_4.png",
+  s5: "sou_5.png",
+  s6: "sou_6.png",
+  s7: "sou_7.png",
+  s8: "sou_8.png",
+  s9: "sou_9.png",
+  zE: "wind_east.png",
+  zS: "wind_south.png",
+  zW: "wind_west.png",
+  zN: "wind_north.png",
+  zP: "dragon_white.png",
+  zF: "dragon_green.png",
+  zC: "dragon_red.png",
 };
 
 export function renderTileFace(tile) {
-  const pixels = tile.suit === "z" ? renderHonor(tile.value) : renderNumberTile(tile.suit, tile.value);
+  const imageSrc = getTileImageSrc(tile);
+
   return `
     <span class="tile-face tile-face-${tile.suit}" aria-hidden="true">
-      ${pixels.map((color) => `<span class="tile-pixel ${color ? `tile-pixel-${color}` : ""}"></span>`).join("")}
+      <img class="tile-image" src="${imageSrc}" alt="" draggable="false" />
     </span>
   `;
 }
 
-function renderNumberTile(suit, value) {
-  const pixels = emptyPixels();
-  const color = suitColor(suit);
-  for (const [spotRow, spotCol] of numberSpots[value] ?? []) {
-    const row = 1 + spotRow * 3;
-    const col = 1 + spotCol * 2;
-    drawSuitMark(pixels, suit, row, col, color);
-  }
-  return pixels;
+function getTileImageSrc(tile) {
+  const fileName = tileImageFiles[tileKey(tile)] ?? tileImageFiles.zP;
+  return new URL(`./source/${fileName}`, import.meta.url).href;
 }
 
-function renderHonor(value) {
-  const pixels = emptyPixels();
-  const glyph = honorGlyphs[value] ?? honorGlyphs.E;
-  const color = honorColors[value] ?? "ink";
-  glyph.forEach((line, row) => {
-    [...line].forEach((cell, col) => {
-      if (cell === "x") setPixel(pixels, row + 1, col + 1, color);
-    });
-  });
-  return pixels;
-}
-
-function drawSuitMark(pixels, suit, row, col, color) {
-  if (suit === "p") {
-    setPixel(pixels, row - 1, col, color);
-    setPixel(pixels, row, col - 1, color);
-    setPixel(pixels, row, col + 1, color);
-    setPixel(pixels, row + 1, col, color);
-    return;
-  }
-
-  if (suit === "s") {
-    setPixel(pixels, row - 1, col, color);
-    setPixel(pixels, row, col, color);
-    setPixel(pixels, row + 1, col, color);
-    setPixel(pixels, row, col - 1, "ink");
-    setPixel(pixels, row, col + 1, "ink");
-    return;
-  }
-
-  setPixel(pixels, row - 1, col, color);
-  setPixel(pixels, row, col - 1, color);
-  setPixel(pixels, row, col, color);
-  setPixel(pixels, row, col + 1, color);
-  setPixel(pixels, row + 1, col, color);
-}
-
-function suitColor(suit) {
-  if (suit === "m") return "red";
-  if (suit === "p") return "blue";
-  return "green";
-}
-
-function emptyPixels() {
-  return Array.from({ length: COLS * ROWS }, () => "");
-}
-
-function setPixel(pixels, row, col, color) {
-  if (row < 0 || row >= ROWS || col < 0 || col >= COLS) return;
-  pixels[row * COLS + col] = color;
+function tileKey(tile) {
+  return `${tile.suit}${tile.value}`;
 }
