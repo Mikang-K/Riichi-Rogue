@@ -7,11 +7,11 @@ import {
   rounds,
   scoreHand,
   submitHand,
-  tileLabel,
   tileName,
   tutorialRound,
   toggleTile,
 } from "./game.js";
+import { renderTileFace } from "./tileArt.js";
 
 const app = document.querySelector("#app");
 let state = newTitle();
@@ -85,7 +85,7 @@ function render() {
         </article>
         <article class="panel compact">
           <span class="label">도라</span>
-          <strong class="dora-tile" title="${tileName(state.dora)}">${tileLabel(state.dora)}</strong>
+          <strong class="dora-tile" title="${tileName(state.dora)}">${renderTileFace(state.dora)}</strong>
         </article>
         <article class="panel compact">
           <span class="label">획득 점수</span>
@@ -221,7 +221,7 @@ function renderYakuHelp() {
 function tileButton(tile) {
   const selected = state.selected.includes(tile.copyId);
   const classes = ["tile", tile.suit === "z" ? "honor" : tile.suit, selected ? "selected" : ""].join(" ");
-  return `<button class="${classes}" data-tile="${tile.copyId}" aria-label="${tileName(tile)}" aria-pressed="${selected}" title="${tileName(tile)}">${tileLabel(tile)}</button>`;
+  return `<button class="${classes}" data-tile="${tile.copyId}" aria-label="${tileName(tile)}" aria-pressed="${selected}" title="${tileName(tile)}">${renderTileFace(tile)}</button>`;
 }
 
 function canAct() {
