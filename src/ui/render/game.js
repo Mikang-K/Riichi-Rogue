@@ -4,6 +4,7 @@ import { renderScore, renderRelic } from "./score.js";
 import { renderTutorialGuide } from "./tutorial.js";
 import { renderYakuHelp, renderTermsHelp, renderReward, renderEnd, renderTutorialComplete } from "./modal.js";
 import { renderTileFace } from "../../tileArt.js";
+import { renderMusicControl } from "./audio.js";
 
 export function renderGameView(state, uiState) {
   const isTutorial = state.mode === "tutorial";
@@ -18,6 +19,7 @@ export function renderGameView(state, uiState) {
       ${renderTable(state, score)}
       ${renderInfoGrid(state, score)}
       ${renderOverlays(state, score, uiState)}
+      ${renderMusicControl(uiState.isMusicMuted)}
     </section>
   `;
 }

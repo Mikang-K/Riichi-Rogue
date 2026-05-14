@@ -1,5 +1,7 @@
-const SUITS = ["m", "p", "s"];
-const HONORS = ["E", "S", "W", "N", "P", "F", "C"];
+import { analyzeHand } from "./game/hand-analysis.js";
+import { evaluateYaku } from "./game/yaku-evaluator.js";
+import { HONORS, SUITS, countTiles, sameFace, sortTiles } from "./game/tile-utils.js";
+
 const HONOR_LABELS = { E: "동", S: "남", W: "서", N: "북", P: "백", F: "발", C: "중" };
 const SUIT_LABELS = { m: "만", p: "통", s: "삭" };
 const TILE_GLYPHS = {
@@ -25,17 +27,6 @@ const HONOR_TILE_SCORE = 10;
 const DORA_SCORE = 10;
 const LEGACY_HAN_SCORE = 10;
 const DEFAULT_MULTIPLIER = 1;
-const YAKU_SCORE_BY_NAME = {
-  칠대자: 24,
-  탕야오: 10,
-  핑후: 12,
-  또이또이: 30,
-  혼일색: 42,
-  청일색: 80,
-  역패: 12,
-  삼색동순: 28,
-};
-
 export const relicPool = [
   {
     id: "bamboo-lens",
@@ -264,10 +255,10 @@ export function chooseRelic(state, relicId) {
   });
 }
 
-export function scoreHand(tiles, dora, relics) {
+export function scoreHand(tiles, dora, relics = []) {
   const counts = countTiles(tiles);
   const analysis = analyzeHand(tiles);
-  const yaku = analysis.isComplete ? getYaku(tiles, analysis) : [];
+  const yaku = analysis.isComplete ? evaluateYaku(tiles, analysis) : [];
   const doraCount = tiles.filter((tile) => sameFace(tile, dora)).length;
   const tileScore = tiles.reduce((sum, tile) => sum + getTileBaseScore(tile), 0);
   const yakuScore = yaku.reduce((sum, item) => sum + item.score, 0);
@@ -397,115 +388,6 @@ function draw(deck, count) {
 
 function shuffle(items) {
   return [...items].sort(() => Math.random() - 0.5);
-}
-
-function sortTiles(tiles) {
-  const suitOrder = { m: 0, p: 1, s: 2, z: 3 };
-  return [...tiles].sort((a, b) => suitOrder[a.suit] - suitOrder[b.suit] || compareValue(a.value, b.value));
-}
-
-function compareValue(a, b) {
-  const order = { E: 1, S: 2, W: 3, N: 4, P: 5, F: 6, C: 7 };
-  return (order[a] ?? a) - (order[b] ?? b);
-}
-
-function keyOf(tile) {
-  return `${tile.suit}${tile.value}`;
-}
-
-function sameFace(a, b) {
-  return a.suit === b.suit && a.value === b.value;
-}
-
-function countTiles(tiles) {
-  const counts = new Map();
-  tiles.forEach((tile) => counts.set(keyOf(tile), (counts.get(keyOf(tile)) ?? 0) + 1));
-  return counts;
-}
-
-function analyzeHand(tiles) {
-  const counts = countTiles(tiles);
-  const pairs = [...counts.values()].filter((count) => count === 2).length;
-  if (tiles.length === 14 && pairs === 7) {
-    return { isComplete: true, type: "sevenPairs", melds: [], pair: null };
-  }
-
-  const faces = [...counts.keys()];
-  for (const pairKey of faces) {
-    if ((counts.get(pairKey) ?? 0) < 2) continue;
-    const nextCounts = new Map(counts);
-    nextCounts.set(pairKey, nextCounts.get(pairKey) - 2);
-    const melds = findMelds(nextCounts);
-    if (melds) return { isComplete: true, type: "standard", melds, pair: pairKey };
-  }
-
-  return { isComplete: false, type: "none", melds: [], pair: null };
-}
-
-function findMelds(counts, melds = []) {
-  const current = [...counts.entries()].find(([, count]) => count > 0);
-  if (!current) return melds;
-
-  const [key, count] = current;
-  const tile = parseKey(key);
-  if (count >= 3) {
-    const tripletCounts = new Map(counts);
-    tripletCounts.set(key, count - 3);
-    const tripletResult = findMelds(tripletCounts, [...melds, { type: "triplet", tiles: [tile, tile, tile] }]);
-    if (tripletResult) return tripletResult;
-  }
-
-  if (tile.suit !== "z" && tile.value <= 7) {
-    const keys = [key, `${tile.suit}${tile.value + 1}`, `${tile.suit}${tile.value + 2}`];
-    if (keys.every((item) => (counts.get(item) ?? 0) > 0)) {
-      const sequenceCounts = new Map(counts);
-      keys.forEach((item) => sequenceCounts.set(item, sequenceCounts.get(item) - 1));
-      const sequenceResult = findMelds(sequenceCounts, [
-        ...melds,
-        { type: "sequence", tiles: keys.map(parseKey) },
-      ]);
-      if (sequenceResult) return sequenceResult;
-    }
-  }
-
-  return null;
-}
-
-function parseKey(key) {
-  const suit = key[0];
-  const raw = key.slice(1);
-  return { suit, value: suit === "z" ? raw : Number(raw) };
-}
-
-function getYaku(tiles, analysis) {
-  const yaku = [];
-  const suits = new Set(tiles.filter((tile) => tile.suit !== "z").map((tile) => tile.suit));
-  const hasHonor = tiles.some((tile) => tile.suit === "z");
-  const addYaku = (name, han) => yaku.push({ name, han, score: YAKU_SCORE_BY_NAME[name] ?? han * LEGACY_HAN_SCORE });
-
-  if (analysis.type === "sevenPairs") addYaku("칠대자", 2);
-  if (tiles.every((tile) => tile.suit !== "z" && tile.value >= 2 && tile.value <= 8)) addYaku("탕야오", 1);
-  if (analysis.type === "standard" && analysis.melds.every((meld) => meld.type === "sequence") && !String(analysis.pair).startsWith("z")) {
-    addYaku("핑후", 1);
-  }
-  if (analysis.type === "standard" && analysis.melds.every((meld) => meld.type === "triplet")) addYaku("또이또이", 2);
-  if (suits.size === 1 && hasHonor) addYaku("혼일색", 3);
-  if (suits.size === 1 && !hasHonor) addYaku("청일색", 6);
-  if (analysis.melds.some((meld) => meld.type === "triplet" && meld.tiles[0].suit === "z" && ["P", "F", "C"].includes(meld.tiles[0].value))) {
-    addYaku("역패", 1);
-  }
-  if (hasSanshoku(analysis.melds)) addYaku("삼색동순", 2);
-
-  return yaku;
-}
-
-function hasSanshoku(melds) {
-  for (let start = 1; start <= 7; start += 1) {
-    if (SUITS.every((suit) => melds.some((meld) => meld.type === "sequence" && meld.tiles[0].suit === suit && meld.tiles[0].value === start))) {
-      return true;
-    }
-  }
-  return false;
 }
 
 function getRewardOptions(currentRelics) {

@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "node --check src/game.js"
+    "check": "node --check src/game.js && node --check src/game/tile-utils.js && node --check src/game/hand-analysis.js && node --check src/game/yaku-data.js && node --check src/game/yaku-rules.js && node --check src/game/yaku-evaluator.js && node --check src/ui/audio.js && node --check src/ui/render/audio.js && node scripts/check-yaku.mjs"
   },
   "devDependencies": {
     "vite": "^8.0.12"

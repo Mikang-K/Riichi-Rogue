@@ -6,12 +6,18 @@ import {
   newTutorial,
   chooseRelic,
 } from "../game.js";
+import { startBackgroundMusic, toggleBackgroundMusic } from "./audio.js";
 
 export function initEvents({ getState, setState, getUiState, setUiState, rerender }) {
   document.querySelector("#app").addEventListener("click", (e) => {
     const action = e.target.closest("[data-action]")?.dataset.action;
     const tileId = e.target.closest("[data-tile]")?.dataset.tile;
     const relicId = e.target.closest("[data-relic]")?.dataset.relic;
+    const uiState = getUiState();
+
+    if (action !== "toggle-music") {
+      startBackgroundMusic({ muted: uiState.isMusicMuted });
+    }
 
     if (tileId) {
       setState(toggleTile(getState(), tileId));
@@ -63,8 +69,19 @@ export function initEvents({ getState, setState, getUiState, setUiState, rerende
         setUiState({ isTermsModalOpen: false });
         rerender();
         break;
+      case "toggle-music": {
+        const nextMuted = !uiState.isMusicMuted;
+        setUiState({ isMusicMuted: nextMuted });
+        toggleBackgroundMusic({ muted: nextMuted });
+        rerender();
+        break;
+      }
       default:
         break;
     }
   });
+
+  document.addEventListener("keydown", () => {
+    startBackgroundMusic({ muted: getUiState().isMusicMuted });
+  }, { once: true });
 }

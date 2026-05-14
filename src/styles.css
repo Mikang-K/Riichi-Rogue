@@ -452,10 +452,16 @@ h2 {
 }
 
 .yaku-help-button,
-.terms-help-button {
+.terms-help-button,
+.music-button {
   position: fixed;
-  top: 50%;
   z-index: 20;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.3);
+}
+
+.yaku-help-button,
+.terms-help-button {
+  top: 50%;
   min-width: 44px;
   padding: 14px 10px;
   border-radius: 8px 0 0 8px;
@@ -464,7 +470,6 @@ h2 {
   font-weight: 900;
   writing-mode: vertical-rl;
   text-orientation: mixed;
-  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.3);
   transform: translateY(-50%);
 }
 
@@ -475,6 +480,22 @@ h2 {
 .terms-help-button {
   left: 0;
   border-radius: 0 8px 8px 0;
+  background: #d7ded0;
+}
+
+.music-button {
+  right: 16px;
+  bottom: 16px;
+  min-height: 38px;
+  padding: 0 13px;
+  border-radius: 8px;
+  background: #f3c161;
+  color: #1b1d17;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.music-button.is-muted {
   background: #d7ded0;
 }
 

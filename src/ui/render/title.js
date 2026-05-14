@@ -1,4 +1,5 @@
 import { renderYakuHelp, renderTermsHelp } from "./modal.js";
+import { renderMusicControl } from "./audio.js";
 
 export function renderTitleView(uiState) {
   return `
@@ -23,6 +24,7 @@ export function renderTitleView(uiState) {
       </section>
       ${renderYakuHelp(uiState.isYakuModalOpen)}
       ${renderTermsHelp(uiState.isTermsModalOpen)}
+      ${renderMusicControl(uiState.isMusicMuted)}
     </section>
   `;
 }
