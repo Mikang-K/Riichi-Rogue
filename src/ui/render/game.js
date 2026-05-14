@@ -104,7 +104,8 @@ function renderInfoGrid(state, score) {
 function renderOverlays(state, score, uiState) {
   return `
     ${state.status === "tutorialComplete" ? renderTutorialComplete(score) : ""}
-    ${state.status === "reward" ? renderReward(state.rewardOptions) : ""}
+    ${state.status === "startReward" ? renderReward(state.rewardOptions, "시작 유물 선택", "이번 런에서 첫 번째로 사용할 유물을 고르세요.") : ""}
+    ${state.status === "reward" ? renderReward(state.rewardOptions, "보상 선택", "라운드를 통과했습니다. 다음 라운드에 가져갈 유물을 하나 고르세요.") : ""}
     ${state.status === "lost" || state.status === "won" ? renderEnd(state.status, state.message) : ""}
     ${renderYakuHelp(uiState.isYakuModalOpen)}
     ${renderTermsHelp(uiState.isTermsModalOpen)}

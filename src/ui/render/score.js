@@ -15,6 +15,7 @@ export function renderScore(score) {
       <li><span>도라</span><strong>${score.doraScore}점</strong></li>
       ${relics}
       <li><span>역 배수</span><strong>x${formatMultiplier(score.yakuMultiplier)}</strong></li>
+      <li><span>역 완성 배수</span><strong>x${formatMultiplier(score.yakuCompletionMultiplier)}</strong></li>
       <li><span>전체 배수</span><strong>x${formatMultiplier(score.globalMultiplier)}</strong></li>
       <li><span>최종 점수</span><strong>${score.totalScore}점</strong></li>
     </ul>
@@ -35,8 +36,11 @@ export function renderRelicBonus(item) {
 
 export function renderRelic(relic) {
   return `
-    <div class="relic">
-      <strong>${relic.name}</strong>
+    <div class="relic relic-${relic.rarity ?? "common"}">
+      <div class="relic-title">
+        <strong>${relic.name}</strong>
+        <small>${formatRarity(relic.rarity)}</small>
+      </div>
       <span>${relic.text}</span>
     </div>
   `;
@@ -44,4 +48,12 @@ export function renderRelic(relic) {
 
 export function formatMultiplier(value) {
   return Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
+}
+
+export function formatRarity(rarity = "common") {
+  return {
+    common: "일반",
+    rare: "희귀",
+    legendary: "전설",
+  }[rarity] ?? "일반";
 }

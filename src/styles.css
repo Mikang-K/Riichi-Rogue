@@ -426,10 +426,46 @@ h2 {
   text-align: left;
 }
 
+.relic-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.relic-title small,
+.reward small {
+  width: fit-content;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #f5f0e6;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
 .relic span,
 .reward span {
   color: #cbd5c7;
   font-size: 0.9rem;
+}
+
+.relic-common,
+.reward.relic-common {
+  border-color: rgba(215, 222, 208, 0.32);
+  background: rgba(215, 222, 208, 0.1);
+}
+
+.relic-rare,
+.reward.relic-rare {
+  border-color: rgba(92, 170, 188, 0.58);
+  background: rgba(52, 103, 116, 0.22);
+}
+
+.relic-legendary,
+.reward.relic-legendary {
+  border-color: rgba(243, 193, 97, 0.72);
+  background: rgba(120, 78, 31, 0.28);
 }
 
 .overlay {
@@ -561,7 +597,7 @@ h2 {
   background: rgba(255, 255, 255, 0.06);
 }
 
-.yaku-item div {
+.yaku-item > div {
   display: grid;
   gap: 4px;
 }
@@ -576,15 +612,9 @@ h2 {
   line-height: 1.5;
 }
 
-.yaku-item em {
-  color: #fff4c7;
-  font-family: "Segoe UI Symbol", "Noto Sans Symbols 2", "Apple Symbols", "Noto Sans KR", sans-serif;
-  font-size: 1.15rem;
-  font-style: normal;
-  line-height: 1.35;
-}
-
 .yaku-item b {
+  display: grid;
+  gap: 2px;
   min-width: 54px;
   padding: 7px 9px;
   border-radius: 999px;
@@ -592,6 +622,40 @@ h2 {
   color: #f3c161;
   text-align: center;
   font-size: 0.9rem;
+}
+
+.yaku-item b span,
+.yaku-item b small {
+  display: block;
+}
+
+.yaku-item b small {
+  color: #fff4c7;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.yaku-example-hand {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 3px;
+  align-items: center;
+  max-width: 100%;
+  margin-top: 4px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.yaku-example-tile {
+  display: inline-grid;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 32px;
+}
+
+.yaku-example-tile .tile-face {
+  width: 24px;
+  height: 32px;
 }
 
 .term-item {
@@ -628,8 +692,6 @@ h2 {
   gap: 8px;
   min-height: 142px;
   padding: 16px;
-  border-color: rgba(243, 193, 97, 0.5);
-  background: #263028;
   color: #f8f3e8;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
@@ -643,7 +705,7 @@ h2 {
 }
 
 .modal .reward strong {
-  color: #f3c161;
+  color: #f8f3e8;
   font-size: 1.04rem;
   line-height: 1.25;
 }

@@ -27,72 +27,166 @@ const HONOR_TILE_SCORE = 10;
 const DORA_SCORE = 10;
 const LEGACY_HAN_SCORE = 10;
 const DEFAULT_MULTIPLIER = 1;
+const YAKU_COMPLETION_MULTIPLIER_PER_HAN = 0.25;
+const MAX_YAKU_COMPLETION_MULTIPLIER_BONUS = 3;
+export const relicRarities = {
+  common: { label: "일반", weight: 70 },
+  rare: { label: "희귀", weight: 25 },
+  legendary: { label: "전설", weight: 5 },
+};
+
 export const relicPool = [
   {
     id: "bamboo-lens",
     name: "대나무 렌즈",
-    text: "삭수 슌쯔마다 +1판",
-    score: ({ analysis }) => analysis.melds.filter((meld) => meld.type === "sequence" && meld.tiles[0].suit === "s").length,
+    rarity: "common",
+    text: "삭수 슌쯔마다 역 점수 +8점",
+    effect: ({ analysis }) => ({
+      yakuScoreBonus: analysis.melds.filter((meld) => meld.type === "sequence" && meld.tiles[0].suit === "s").length * 8,
+    }),
   },
   {
     id: "red-stick",
     name: "붉은 점봉",
-    text: "커쯔 2개 이상이면 +2판",
-    score: ({ analysis }) => (analysis.melds.filter((meld) => meld.type === "triplet").length >= 2 ? 2 : 0),
+    rarity: "rare",
+    text: "커쯔 2개 이상이면 역 점수 +24점",
+    effect: ({ analysis }) => ({
+      yakuScoreBonus: analysis.melds.filter((meld) => meld.type === "triplet").length >= 2 ? 24 : 0,
+    }),
   },
   {
     id: "quiet-ready",
     name: "고요한 리치봉",
-    text: "기본 역이 1개뿐이면 +2판",
-    score: ({ yaku }) => (yaku.length === 1 ? 2 : 0),
+    rarity: "rare",
+    text: "기본 역이 1개뿐이면 역 배수 +0.5",
+    effect: ({ yaku }) => ({ yakuMultiplierBonus: yaku.length === 1 ? 0.5 : 0 }),
   },
   {
     id: "honor-cache",
     name: "자패 금고",
-    text: "자패 3장 이상이면 +1판",
-    score: ({ tiles }) => (tiles.filter((tile) => tile.suit === "z").length >= 3 ? 1 : 0),
+    rarity: "common",
+    text: "자패 3장 이상이면 패 점수 +12점",
+    effect: ({ tiles }) => ({ tileScoreBonus: tiles.filter((tile) => tile.suit === "z").length >= 3 ? 12 : 0 }),
   },
   {
     id: "clean-brush",
     name: "청색 붓",
-    text: "자패가 없으면 +1판",
-    score: ({ tiles }) => (tiles.every((tile) => tile.suit !== "z") ? 1 : 0),
+    rarity: "common",
+    text: "자패가 없으면 패 점수 +14점",
+    effect: ({ tiles }) => ({ tileScoreBonus: tiles.every((tile) => tile.suit !== "z") ? 14 : 0 }),
   },
   {
     id: "pair-coin",
     name: "쌍동전",
-    text: "또이츠마다 +1판",
-    score: ({ counts }) => [...counts.values()].filter((count) => count >= 2).length,
+    rarity: "common",
+    text: "또이츠마다 역 점수 +6점",
+    effect: ({ counts }) => ({ yakuScoreBonus: [...counts.values()].filter((count) => count >= 2).length * 6 }),
   },
   {
     id: "dora-bell",
     name: "도라 방울",
-    text: "도라 보너스 +1판",
-    score: ({ doraHan }) => (doraHan > 0 ? 1 : 0),
+    rarity: "common",
+    text: "도라가 있으면 역 점수 +10점",
+    effect: ({ doraHan }) => ({ yakuScoreBonus: doraHan > 0 ? 10 : 0 }),
+  },
+  {
+    id: "dora-mirror",
+    name: "도라 거울",
+    rarity: "rare",
+    text: "도라 1장마다 역 점수 +18점",
+    effect: ({ doraCount }) => ({ yakuScoreBonus: doraCount * 18 }),
   },
   {
     id: "same-number",
     name: "삼색 자",
-    text: "세 종류에 같은 숫자가 있으면 +2판",
-    score: ({ tiles }) => {
+    rarity: "common",
+    text: "세 종류에 같은 숫자가 있으면 역 점수 +18점",
+    effect: ({ tiles }) => {
       for (let value = 1; value <= 9; value += 1) {
-        if (SUITS.every((suit) => tiles.some((tile) => tile.suit === suit && tile.value === value))) return 2;
+        if (SUITS.every((suit) => tiles.some((tile) => tile.suit === suit && tile.value === value))) return { yakuScoreBonus: 18 };
       }
-      return 0;
+      return { yakuScoreBonus: 0 };
     },
+  },
+  {
+    id: "terminal-prism",
+    name: "노두 프리즘",
+    rarity: "common",
+    text: "1, 9, 자패마다 패 점수 +3점",
+    effect: ({ tiles }) => ({
+      tileScoreBonus: tiles.filter((tile) => tile.suit === "z" || tile.value === 1 || tile.value === 9).length * 3,
+    }),
+  },
+  {
+    id: "simple-polish",
+    name: "중장패 광택제",
+    rarity: "rare",
+    text: "모든 패가 2~8 수패면 패 배수 +0.45",
+    effect: ({ tiles }) => ({
+      tileMultiplierBonus: tiles.every((tile) => tile.suit !== "z" && tile.value >= 2 && tile.value <= 8) ? 0.45 : 0,
+    }),
+  },
+  {
+    id: "straight-compass",
+    name: "일직선 나침반",
+    rarity: "rare",
+    text: "순자가 3개 이상이면 역 배수 +0.45",
+    effect: ({ analysis }) => ({
+      yakuMultiplierBonus: analysis.melds.filter((meld) => meld.type === "sequence").length >= 3 ? 0.45 : 0,
+    }),
+  },
+  {
+    id: "triplet-drum",
+    name: "커쯔 북",
+    rarity: "common",
+    text: "커쯔마다 역 점수 +10점",
+    effect: ({ analysis }) => ({
+      yakuScoreBonus: analysis.melds.filter((meld) => meld.type === "triplet").length * 10,
+    }),
+  },
+  {
+    id: "flush-lantern",
+    name: "일색 등롱",
+    rarity: "legendary",
+    text: "수패가 한 종류뿐이면 전체 배수 +0.8",
+    effect: ({ tiles }) => {
+      const suits = new Set(tiles.filter((tile) => tile.suit !== "z").map((tile) => tile.suit));
+      return { globalMultiplierBonus: suits.size === 1 ? 0.8 : 0 };
+    },
+  },
+  {
+    id: "dragon-seal",
+    name: "삼원 봉인",
+    rarity: "rare",
+    text: "백, 발, 중 커쯔마다 역 점수 +22점",
+    effect: ({ analysis }) => ({
+      yakuScoreBonus: analysis.melds
+        .filter((meld) => meld.type === "triplet" && meld.tiles[0].suit === "z" && ["P", "F", "C"].includes(meld.tiles[0].value))
+        .length * 22,
+    }),
+  },
+  {
+    id: "yakuman-banner",
+    name: "역만 현수막",
+    rarity: "legendary",
+    text: "역만이면 전체 배수 +1",
+    effect: ({ yaku }) => ({
+      globalMultiplierBonus: yaku.some((item) => item.yakuman) ? 1 : 0,
+    }),
   },
   {
     id: "spare-wall",
     name: "여분의 산",
+    rarity: "common",
     text: "매 라운드 교환 횟수 +1",
-    score: () => 0,
     player: (player) => ({ ...player, maxDiscards: player.maxDiscards + 1 }),
   },
   {
     id: "heavy-stick",
     name: "무거운 점봉",
-    text: "매 라운드 교환 횟수 -1, 대신 조합 점수 +2판",
-    score: () => 2,
+    rarity: "legendary",
+    text: "매 라운드 교환 횟수 -1, 대신 역 배수 +0.75",
+    effect: () => ({ yakuMultiplierBonus: 0.75 }),
     player: (player) => ({ ...player, maxDiscards: Math.max(1, player.maxDiscards - 1) }),
   },
 ];
@@ -111,10 +205,11 @@ export function newRun() {
     roundIndex: 0,
     maxDiscards: BASE_MAX_DISCARDS,
     discardsLeft: BASE_MAX_DISCARDS,
-    relics: [relicPool[0]],
+    relics: [],
     coins: 0,
-    status: "playing",
-    message: "패를 골라 교환하거나, 완성 조합이면 제출하세요.",
+    status: "startReward",
+    rewardOptions: getRewardOptions([]),
+    message: "시작 유물을 하나 고르세요.",
   };
 }
 
@@ -245,8 +340,19 @@ export function submitHand(state) {
 
 export function chooseRelic(state, relicId) {
   const relic = relicPool.find((item) => item.id === relicId);
-  if (state.status !== "reward" || !relic) return state;
+  if (!["reward", "startReward"].includes(state.status) || !relic) return state;
   const playerState = applyRelicPlayerEffect(state, relic);
+
+  if (state.status === "startReward") {
+    return {
+      ...playerState,
+      relics: [relic],
+      rewardOptions: [],
+      status: "playing",
+      message: `${relic.name}을 들고 ${rounds[state.roundIndex].name}을 시작합니다.`,
+    };
+  }
+
   return startRound({
     ...playerState,
     relics: [...playerState.relics, relic],
@@ -264,13 +370,14 @@ export function scoreHand(tiles, dora, relics = []) {
   const yakuScore = yaku.reduce((sum, item) => sum + item.score, 0);
   const doraScore = analysis.isComplete ? doraCount * DORA_SCORE : 0;
   const totalHan = yaku.reduce((sum, item) => sum + item.han, 0) + (analysis.isComplete ? doraCount : 0);
+  const yakuCompletionMultiplier = getYakuCompletionMultiplier(yaku, totalHan);
   const relicBonuses = relics
     .map((relic) => ({ relic, bonus: getRelicScoreBonus(relic, { tiles, analysis, yaku, counts, doraCount, doraHan: doraCount }) }))
     .filter((item) => hasScoreBonus(item.bonus));
   const bonusTotals = relicBonuses.reduce(addScoreBonuses, emptyScoreBonus());
   const tileMultiplier = DEFAULT_MULTIPLIER + bonusTotals.tileMultiplierBonus;
   const yakuMultiplier = DEFAULT_MULTIPLIER + bonusTotals.yakuMultiplierBonus;
-  const globalMultiplier = DEFAULT_MULTIPLIER + bonusTotals.globalMultiplierBonus;
+  const globalMultiplier = yakuCompletionMultiplier + bonusTotals.globalMultiplierBonus;
   const tileScoreTotal = Math.floor((tileScore + bonusTotals.tileScoreBonus) * tileMultiplier);
   const yakuScoreTotal = Math.floor((yakuScore + doraScore + bonusTotals.yakuScoreBonus) * yakuMultiplier);
   const totalScore = Math.floor((tileScoreTotal + yakuScoreTotal) * globalMultiplier);
@@ -292,6 +399,7 @@ export function scoreHand(tiles, dora, relics = []) {
     yakuScoreBonus: bonusTotals.yakuScoreBonus,
     yakuMultiplier,
     yakuScoreTotal,
+    yakuCompletionMultiplier,
     globalMultiplier,
     totalScore,
     totalHan,
@@ -347,6 +455,12 @@ function normalizeScoreBonus(bonus) {
   return { ...emptyScoreBonus(), ...bonus };
 }
 
+function getYakuCompletionMultiplier(yaku, totalHan) {
+  if (yaku.length === 0) return DEFAULT_MULTIPLIER;
+  const bonus = Math.min(MAX_YAKU_COMPLETION_MULTIPLIER_BONUS, totalHan * YAKU_COMPLETION_MULTIPLIER_PER_HAN);
+  return DEFAULT_MULTIPLIER + bonus;
+}
+
 function scoreToCoins(score) {
   return Math.max(1, Math.floor(score / 25));
 }
@@ -392,5 +506,30 @@ function shuffle(items) {
 
 function getRewardOptions(currentRelics) {
   const owned = new Set(currentRelics.map((relic) => relic.id));
-  return shuffle(relicPool.filter((relic) => !owned.has(relic.id))).slice(0, 3);
+  return drawWeightedRelics(relicPool.filter((relic) => !owned.has(relic.id)), 3);
+}
+
+function drawWeightedRelics(candidates, count) {
+  const options = [];
+  const pool = [...candidates];
+  while (options.length < count && pool.length > 0) {
+    const selected = takeWeightedRelic(pool);
+    options.push(selected);
+    pool.splice(pool.indexOf(selected), 1);
+  }
+  return options;
+}
+
+function takeWeightedRelic(candidates) {
+  const totalWeight = candidates.reduce((sum, relic) => sum + getRelicWeight(relic), 0);
+  let roll = Math.random() * totalWeight;
+  for (const relic of candidates) {
+    roll -= getRelicWeight(relic);
+    if (roll <= 0) return relic;
+  }
+  return candidates.at(-1);
+}
+
+function getRelicWeight(relic) {
+  return relicRarities[relic.rarity]?.weight ?? relicRarities.common.weight;
 }

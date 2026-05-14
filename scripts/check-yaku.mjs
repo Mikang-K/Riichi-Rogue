@@ -1,4 +1,4 @@
-import { scoreHand, newTutorial, exchangeSelected } from "../src/game.js";
+import { scoreHand, newTutorial, exchangeSelected, newRun, chooseRelic, relicPool, relicRarities } from "../src/game.js";
 
 const cases = [
   { name: "삼색동순", hand: "234m 234p 234s 345s 66p", includes: ["삼색동순"] },
@@ -38,7 +38,35 @@ if (!tutorialScore.isComplete) {
   throw new Error("튜토리얼 손패가 더 이상 화료로 판정되지 않습니다.");
 }
 
-console.log(`Yaku checks passed: ${cases.length + 1}`);
+const run = newRun();
+if (run.status !== "startReward" || run.rewardOptions.length !== 3 || run.relics.length !== 0) {
+  throw new Error("새 런이 시작 유물 3택 상태로 시작하지 않습니다.");
+}
+
+if (run.rewardOptions.some((relic) => !relicRarities[relic.rarity])) {
+  throw new Error("시작 유물 후보에 알 수 없는 희귀도가 있습니다.");
+}
+
+if (relicPool.some((relic) => !relicRarities[relic.rarity])) {
+  throw new Error("희귀도가 없는 유물이 있습니다.");
+}
+
+const runWithRelic = chooseRelic(run, run.rewardOptions[0].id);
+if (runWithRelic.status !== "playing" || runWithRelic.relics.length !== 1) {
+  throw new Error("시작 유물 선택 후 본 게임이 시작되지 않습니다.");
+}
+
+const tanyaoScore = scoreHand(parseHand("234m 234p 345s 678m 66p"), { suit: "m", value: 1, copyId: "test-dora" });
+if (tanyaoScore.yakuCompletionMultiplier <= 1 || tanyaoScore.globalMultiplier <= 1) {
+  throw new Error("역 완성 손패에 기본 배수가 적용되지 않습니다.");
+}
+
+const incompleteScore = scoreHand(parseHand("123m 456m 789m 123p ESz"), { suit: "m", value: 1, copyId: "test-dora" });
+if (incompleteScore.yakuCompletionMultiplier !== 1 || incompleteScore.globalMultiplier !== 1) {
+  throw new Error("미완성 손패에 역 완성 배수가 적용되고 있습니다.");
+}
+
+console.log(`Yaku checks passed: ${cases.length + 7}`);
 
 function namesFor(handText) {
   return scoreHand(parseHand(handText), { suit: "m", value: 1, copyId: "test-dora" }).yaku.map((item) => item.name);

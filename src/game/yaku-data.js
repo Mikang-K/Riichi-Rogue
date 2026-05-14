@@ -27,7 +27,7 @@ export const yakuDefinitions = [
     score: 10,
     implemented: true,
     text: "1, 9, 자패 없이 2부터 8까지의 숫자패만 사용합니다.",
-    example: "🀈🀉🀊 🀚🀛🀜 🀒🀓🀔 🀌🀍🀎 🀝🀝",
+    exampleTiles: "234m 234p 345s 678m 66p",
   },
   {
     id: "pinfu",
@@ -37,7 +37,7 @@ export const yakuDefinitions = [
     score: 12,
     implemented: true,
     text: "모든 몸통이 연속 숫자 3장이고, 머리가 점수패가 아닌 기본형입니다. 현재는 대기 형태를 단순화해 판정합니다.",
-    example: "🀇🀈🀉 🀚🀛🀜 🀒🀓🀔 🀌🀍🀎 🀝🀝",
+    exampleTiles: "123m 234p 345s 678m 55p",
   },
   {
     id: "yakuhai",
@@ -47,7 +47,7 @@ export const yakuDefinitions = [
     score: 12,
     implemented: true,
     text: "백, 발, 중을 3장 모으면 붙습니다. 장풍/자풍 판정은 후속 단계에서 확장합니다.",
-    example: "🀄🀄🀄 또는 🀅🀅🀅",
+    exampleTiles: "CCCz FFFz",
   },
   {
     id: "iipeko",
@@ -57,7 +57,7 @@ export const yakuDefinitions = [
     score: 10,
     implemented: true,
     text: "같은 종류, 같은 숫자 시작의 순자를 2개 만듭니다.",
-    example: "🀇🀈🀉 + 🀇🀈🀉",
+    exampleTiles: "123m 123m 456p 789p 55s",
   },
   {
     id: "chiitoitsu",
@@ -67,7 +67,7 @@ export const yakuDefinitions = [
     score: 24,
     implemented: true,
     text: "같은 패 2장짜리 쌍을 7개 만드는 특수 형태입니다.",
-    example: "🀇🀇 🀊🀊 🀚🀚 🀝🀝 🀒🀒 🀖🀖 🀄🀄",
+    exampleTiles: "11m 44m 22p 55p 33s 77s CCz",
   },
   {
     id: "toitoi",
@@ -77,7 +77,7 @@ export const yakuDefinitions = [
     score: 30,
     implemented: true,
     text: "모든 몸통을 같은 패 3장으로 만듭니다.",
-    example: "🀇🀇🀇 🀜🀜🀜 🀔🀔🀔 🀄🀄🀄 🀚🀚",
+    exampleTiles: "111m 444p 555s CCCz 22p",
   },
   {
     id: "sanshokuDoujun",
@@ -87,7 +87,7 @@ export const yakuDefinitions = [
     score: 28,
     implemented: true,
     text: "만수, 통수, 삭수에 같은 숫자 연속 묶음을 하나씩 만듭니다.",
-    example: "🀈🀉🀊 + 🀚🀛🀜 + 🀑🀒🀓",
+    exampleTiles: "234m 234p 234s 345s 66p",
   },
   {
     id: "ittsu",
@@ -97,7 +97,7 @@ export const yakuDefinitions = [
     score: 28,
     implemented: true,
     text: "한 종류의 숫자패로 1-2-3, 4-5-6, 7-8-9를 모두 만듭니다.",
-    example: "🀇🀈🀉 + 🀊🀋🀌 + 🀍🀎🀏",
+    exampleTiles: "123m 456m 789m 111p 99s",
   },
   {
     id: "sanshokuDouko",
@@ -107,7 +107,7 @@ export const yakuDefinitions = [
     score: 30,
     implemented: true,
     text: "만수, 통수, 삭수에 같은 숫자의 커쯔를 하나씩 만듭니다.",
-    example: "🀈🀈🀈 + 🀚🀚🀚 + 🀑🀑🀑",
+    exampleTiles: "222m 222p 222s 345m 99p",
   },
   {
     id: "sananko",
@@ -117,7 +117,7 @@ export const yakuDefinitions = [
     score: 30,
     implemented: true,
     text: "커쯔 3개를 만듭니다. 현재 MVP에서는 론/쯔모와 후로 정보 없이 커쯔 개수로 단순 판정합니다.",
-    example: "🀇🀇🀇 🀜🀜🀜 🀔🀔🀔",
+    exampleTiles: "111m 444p 555s 678m 22p",
   },
   {
     id: "shosangen",
@@ -127,7 +127,7 @@ export const yakuDefinitions = [
     score: 32,
     implemented: true,
     text: "백, 발, 중 중 2개를 커쯔로 만들고 나머지 하나를 머리로 둡니다.",
-    example: "🀆🀆🀆 🀅🀅🀅 🀄🀄",
+    exampleTiles: "PPPz FFFz CCz 123m 123p",
   },
   {
     id: "honroto",
@@ -137,7 +137,7 @@ export const yakuDefinitions = [
     score: 36,
     implemented: true,
     text: "모든 패가 1, 9 또는 자패로만 구성됩니다.",
-    example: "🀇🀇🀇 🀏🀏🀏 🀙🀙🀙 🀡🀡🀡 🀀🀀",
+    exampleTiles: "11m 99m 11p 99p 11s 99s EEz",
   },
   {
     id: "chanta",
@@ -147,7 +147,7 @@ export const yakuDefinitions = [
     score: 24,
     implemented: true,
     text: "모든 몸통과 머리에 요구패가 포함되고, 순자가 1개 이상 있어야 합니다.",
-    example: "🀇🀈🀉 🀍🀎🀏 🀀🀀🀀 🀡🀡🀡 🀁🀁",
+    exampleTiles: "123m 789m EEEz 999p SSz",
   },
   {
     id: "junchan",
@@ -157,7 +157,7 @@ export const yakuDefinitions = [
     score: 42,
     implemented: true,
     text: "모든 몸통과 머리에 노두패가 포함되고, 자패 없이 순자가 1개 이상 있어야 합니다.",
-    example: "🀇🀈🀉 🀍🀎🀏 🀙🀙🀙 🀡🀡🀡 🀗🀗",
+    exampleTiles: "123m 789m 111p 999p 99s",
   },
   {
     id: "ryanpeko",
@@ -167,7 +167,7 @@ export const yakuDefinitions = [
     score: 48,
     implemented: true,
     text: "서로 다른 이페코 2개를 동시에 만듭니다.",
-    example: "🀈🀉🀊 🀈🀉🀊 🀝🀞🀟 🀝🀞🀟 🀗🀗",
+    exampleTiles: "223344m 556677p 88s",
   },
   {
     id: "honitsu",
@@ -177,7 +177,7 @@ export const yakuDefinitions = [
     score: 42,
     implemented: true,
     text: "한 종류의 숫자패와 자패만 사용합니다.",
-    example: "🀇🀈🀉 🀊🀋🀌 🀍🀎🀏 🀄🀄🀄 🀀🀀",
+    exampleTiles: "123m 456m 789m CCCz EEz",
   },
   {
     id: "chinitsu",
@@ -187,7 +187,7 @@ export const yakuDefinitions = [
     score: 80,
     implemented: true,
     text: "한 종류의 숫자패만 사용합니다. 자패도 들어가면 안 됩니다.",
-    example: "🀙🀚🀛 🀜🀝🀞 🀟🀠🀡 🀚🀛🀜 🀝🀝",
+    exampleTiles: "123p 456p 789p 234p 55p",
   },
   {
     id: "kokushiMusou",
@@ -198,7 +198,7 @@ export const yakuDefinitions = [
     yakuman: true,
     implemented: true,
     text: "13종 요구패를 모두 모으고, 그중 하나를 한 쌍으로 만듭니다.",
-    example: "🀇🀏 🀙🀡 🀐🀘 🀀🀁🀂🀃 🀆🀅🀄 + 요구패 1장",
+    exampleTiles: "19m 19p 19s ESWNPFCz 1m",
   },
   {
     id: "suanko",
@@ -209,7 +209,7 @@ export const yakuDefinitions = [
     yakuman: true,
     implemented: true,
     text: "커쯔 4개를 만듭니다. 현재 MVP에서는 후로/론 정보 없이 커쯔 4개로 단순 판정합니다.",
-    example: "🀇🀇🀇 🀜🀜🀜 🀔🀔🀔 🀄🀄🀄 🀚🀚",
+    exampleTiles: "111m 222p 333s CCCz 99m",
   },
   {
     id: "daisangen",
@@ -220,7 +220,7 @@ export const yakuDefinitions = [
     yakuman: true,
     implemented: true,
     text: "백, 발, 중을 모두 커쯔로 만듭니다.",
-    example: "🀆🀆🀆 🀅🀅🀅 🀄🀄🀄",
+    exampleTiles: "PPPz FFFz CCCz 123m 99s",
   },
   {
     id: "shosushi",
@@ -231,7 +231,7 @@ export const yakuDefinitions = [
     yakuman: true,
     implemented: true,
     text: "동, 남, 서, 북 중 3개를 커쯔로 만들고 나머지 하나를 머리로 둡니다.",
-    example: "🀀🀀🀀 🀁🀁🀁 🀂🀂🀂 🀃🀃",
+    exampleTiles: "EEEz SSSz WWWz NNz 123m",
   },
   {
     id: "daisushi",
@@ -242,7 +242,7 @@ export const yakuDefinitions = [
     yakuman: true,
     implemented: true,
     text: "동, 남, 서, 북을 모두 커쯔로 만듭니다.",
-    example: "🀀🀀🀀 🀁🀁🀁 🀂🀂🀂 🀃🀃🀃",
+    exampleTiles: "EEEz SSSz WWWz NNNz 11m",
   },
   {
     id: "tsuuiiso",
@@ -253,7 +253,7 @@ export const yakuDefinitions = [
     yakuman: true,
     implemented: true,
     text: "모든 패를 자패로만 구성합니다.",
-    example: "🀀🀀🀀 🀁🀁🀁 🀆🀆🀆 🀄🀄🀄 🀅🀅",
+    exampleTiles: "EEEz SSSz PPPz CCCz FFz",
   },
   {
     id: "chinroto",
@@ -264,7 +264,7 @@ export const yakuDefinitions = [
     yakuman: true,
     implemented: true,
     text: "모든 패를 1과 9 수패로만 구성합니다.",
-    example: "🀇🀇🀇 🀏🀏🀏 🀙🀙🀙 🀡🀡🀡 🀐🀐",
+    exampleTiles: "111m 999m 111p 999p 11s",
   },
   {
     id: "ryuiso",
@@ -275,7 +275,7 @@ export const yakuDefinitions = [
     yakuman: true,
     implemented: true,
     text: "2, 3, 4, 6, 8삭과 발만 사용합니다.",
-    example: "🀑🀑🀑 🀒🀒🀒 🀓🀓🀓 🀕🀕🀕 🀅🀅",
+    exampleTiles: "222s 333s 444s 666s FFz",
   },
   {
     id: "churenPoto",
@@ -286,16 +286,17 @@ export const yakuDefinitions = [
     yakuman: true,
     implemented: true,
     text: "한 종류의 수패로 1112345678999 형태와 같은 색 추가 1장을 만듭니다.",
-    example: "🀙🀙🀙 🀚🀛🀜🀝🀞🀟🀠 🀡🀡🀡 + 통수 1장",
+    exampleTiles: "11123456789999m",
   },
 ];
 
 export const yakuById = new Map(yakuDefinitions.map((item) => [item.id, item]));
-export const yakuReference = yakuDefinitions.map((item) => ({
+export const yakuReference = yakuDefinitions.filter((item) => item.implemented).map((item) => ({
   name: item.name,
   han: formatHan(item),
-  text: item.implemented ? item.text : `${item.text} (미구현)`,
-  example: item.example,
+  score: item.score,
+  text: item.text,
+  exampleTiles: item.exampleTiles,
 }));
 
 export function createYaku(id) {
