@@ -212,12 +212,30 @@ if (!rinshanScore.yaku.some((item) => item.id === "rinshanKaiho")) {
   throw new Error("깡 직후 영상패로 완성된 손패에 영상개화가 붙지 않았습니다.");
 }
 
+const maxedKanState = {
+  ...kanState,
+  kan: { ...kanState.kan, declaredCount: 4 },
+};
+if (getAvailableKans(maxedKanState).length !== 0) {
+  throw new Error("깡 4번 이후에도 추가 깡 후보가 열려 있습니다.");
+}
+
+const sankantsuScore = scoreHand(parseHand("111m 222p 333s 456m 77p"), kanState.doraState, [], { kanCount: 3 });
+if (!sankantsuScore.yaku.some((item) => item.id === "sankantsu")) {
+  throw new Error("깡 3개에서 삼깡쯔가 붙지 않았습니다.");
+}
+
+const sukantsuScore = scoreHand(parseHand("111m 222p 333s 456m 77p"), kanState.doraState, [], { kanCount: 4 });
+if (!sukantsuScore.yaku.some((item) => item.id === "sukantsu") || sukantsuScore.yaku.some((item) => item.id === "sankantsu")) {
+  throw new Error("깡 4개에서 사깡쯔 역만 처리 또는 삼깡쯔 배제가 올바르지 않습니다.");
+}
+
 const submittedRiichi = submitHand(advancedRiichi);
 if (submittedRiichi.status !== "reward" && submittedRiichi.status !== "won") {
   throw new Error("리치 성공 후 조합 제출로 다음 흐름에 진입하지 못했습니다.");
 }
 
-console.log(`Yaku checks passed: ${cases.length + 22}`);
+console.log(`Yaku checks passed: ${cases.length + 25}`);
 
 function namesFor(handText) {
   return scoreHand(parseHand(handText), { suit: "m", value: 1, copyId: "test-dora" }).yaku.map((item) => item.name);

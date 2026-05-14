@@ -31,8 +31,14 @@ export function renderGameView(state, uiState) {
         riichiAttemptsUsed: state.riichi.attemptsUsed,
         discardsLeft: state.discardsLeft,
         rinshan: state.kan?.rinshanReady === true,
+        kanCount: state.kan?.declaredCount ?? 0,
+        kanSets: state.kan?.sets ?? [],
       }
-      : { rinshan: state.kan?.rinshanReady === true },
+      : {
+        rinshan: state.kan?.rinshanReady === true,
+        kanCount: state.kan?.declaredCount ?? 0,
+        kanSets: state.kan?.sets ?? [],
+      },
   );
 
   return `

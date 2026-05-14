@@ -33,6 +33,7 @@ const MAX_YAKU_COMPLETION_MULTIPLIER_BONUS = 3;
 const RIICHI_YAKU_MULTIPLIER_BONUS = 0.75;
 const RIICHI_LEFTOVER_DISCARD_BONUS = 0.1;
 const MAX_RIICHI_YAKU_MULTIPLIER_BONUS = 1.5;
+const MAX_KAN_DECLARATIONS = 4;
 export const relicRarities = {
   common: { label: "일반", weight: 70 },
   rare: { label: "희귀", weight: 25 },
@@ -414,6 +415,7 @@ export function advanceRiichi(state) {
 
 export function getAvailableKans(state) {
   if (!canAct(state) || state.riichi?.active) return [];
+  if ((state.kan?.declaredCount ?? 0) >= MAX_KAN_DECLARATIONS) return [];
   const doraState = getDoraState(state);
   const deadWall = state.deadWall ?? emptyDeadWall();
   if (deadWall.rinshanTiles.length === 0) return [];
@@ -670,6 +672,8 @@ function getRiichiMultiplierBonus(context) {
 function getScoreContext(state) {
   const context = {
     rinshan: state.kan?.rinshanReady === true,
+    kanCount: state.kan?.declaredCount ?? 0,
+    kanSets: state.kan?.sets ?? [],
   };
   if (!state.riichi?.active) return context;
   return {

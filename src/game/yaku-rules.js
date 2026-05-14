@@ -17,6 +17,8 @@ import {
 export const tileYakuRules = [
   ["riichi", ({ riichi }) => Boolean(riichi)],
   ["rinshanKaiho", ({ rinshan }) => Boolean(rinshan)],
+  ["sankantsu", ({ kanCount }) => (kanCount ?? 0) >= 3],
+  ["sukantsu", ({ kanCount }) => (kanCount ?? 0) >= 4],
   ["tanyao", ({ tiles }) => tiles.every(isSimple)],
   ["honroto", ({ tiles }) => tiles.every(isTerminalOrHonor)],
   ["honitsu", ({ tiles }) => hasOneNumberSuit(tiles) && tiles.some(isHonor)],
@@ -53,6 +55,7 @@ export const excludedBy = {
   junchan: ["chanta"],
   ryanpeko: ["iipeko"],
   daisushi: ["shosushi"],
+  sukantsu: ["sankantsu"],
 };
 
 function isPinfu(arrangement) {
