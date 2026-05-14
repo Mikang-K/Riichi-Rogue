@@ -21,6 +21,7 @@ export function evaluateYaku(tiles, analysis, context = {}) {
 
   const matched = mergeBestArrangementYaku(tileMatched, arrangements, standardArrangements, evaluationContext);
   applyExclusions(matched);
+  applyYakumanLimit(matched);
 
   return [...matched]
     .sort((a, b) => definitionOrder.get(a) - definitionOrder.get(b))
@@ -51,6 +52,7 @@ function mergeBestArrangementYaku(tileMatched, arrangements, standardArrangement
 
     const candidate = new Set(arrangementMatched);
     applyExclusions(candidate);
+    applyYakumanLimit(candidate);
     const candidateScore = scoreIds(candidate);
     if (candidateScore > bestScore) {
       best = candidate;
@@ -59,6 +61,13 @@ function mergeBestArrangementYaku(tileMatched, arrangements, standardArrangement
   });
 
   return best;
+}
+
+function applyYakumanLimit(matched) {
+  const yakumanIds = [...matched].filter((id) => yakuDefinitions.find((item) => item.id === id)?.yakuman);
+  if (!yakumanIds.length) return;
+  matched.clear();
+  yakumanIds.forEach((id) => matched.add(id));
 }
 
 function applyExclusions(matched) {

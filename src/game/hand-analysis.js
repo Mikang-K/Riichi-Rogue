@@ -5,6 +5,7 @@ export function analyzeHand(tiles) {
   const arrangements = [
     ...findStandardArrangements(counts),
     ...findSevenPairArrangements(counts, tiles.length),
+    ...findKokushiArrangements(counts, tiles.length),
   ];
   const standard = arrangements.find((item) => item.type === "standard");
   const primary = standard ?? arrangements[0] ?? { type: "none", melds: [], pair: null };
@@ -16,6 +17,15 @@ export function analyzeHand(tiles) {
     pair: primary.pair ?? null,
     arrangements,
   };
+}
+
+function findKokushiArrangements(counts, tileCount) {
+  const required = ["m1", "m9", "p1", "p9", "s1", "s9", "zE", "zS", "zW", "zN", "zP", "zF", "zC"];
+  if (tileCount !== 14) return [];
+  if (!required.every((key) => (counts.get(key) ?? 0) >= 1)) return [];
+  if (!required.some((key) => (counts.get(key) ?? 0) >= 2)) return [];
+  if ([...counts.keys()].some((key) => !required.includes(key))) return [];
+  return [{ type: "kokushi", melds: [], pair: null, terminalsAndHonors: required }];
 }
 
 function findSevenPairArrangements(counts, tileCount) {

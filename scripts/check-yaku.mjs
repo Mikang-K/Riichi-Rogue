@@ -8,9 +8,18 @@ const cases = [
   { name: "칠대자", hand: "11m 22m 33p 44p 55s 66s EEz", includes: ["칠대자"] },
   { name: "량페코", hand: "223344m 556677p 88s", includes: ["량페코"], excludes: ["이페코"] },
   { name: "이페코", hand: "123m 123m 456p 789p 55s", includes: ["이페코"] },
-  { name: "혼노두", hand: "111m 999m 111p 999p EEz", includes: ["혼노두", "또이또이"] },
+  { name: "혼노두", hand: "11m 99m 11p 99p 11s 99s EEz", includes: ["혼노두", "칠대자"] },
   { name: "찬타", hand: "123m 789m EEEz 999p SSz", includes: ["찬타"], excludes: ["준찬타"] },
   { name: "준찬타", hand: "123m 789m 111p 999p 99s", includes: ["준찬타"], excludes: ["찬타"] },
+  { name: "국사무쌍", hand: "19m 19p 19s ESWNPFCz 1m", includes: ["국사무쌍"], excludes: ["혼노두"] },
+  { name: "사암각", hand: "111m 222p 333s CCCz 99m", includes: ["사암각"], excludes: ["또이또이", "삼암각"] },
+  { name: "대삼원", hand: "PPPz FFFz CCCz 123m 99s", includes: ["대삼원"], excludes: ["소삼원", "역패"] },
+  { name: "소사희", hand: "EEEz SSSz WWWz NNz 123m", includes: ["소사희"], excludes: ["혼일색"] },
+  { name: "대사희", hand: "EEEz SSSz WWWz NNNz 11m", includes: ["대사희"], excludes: ["소사희"] },
+  { name: "자일색", hand: "EEEz SSSz PPPz CCCz FFz", includes: ["자일색"], excludes: ["혼일색"] },
+  { name: "청노두", hand: "111m 999m 111p 999p 11s", includes: ["청노두"], excludes: ["혼노두"] },
+  { name: "녹일색", hand: "222s 333s 444s 666s FFz", includes: ["녹일색"], excludes: ["혼일색"] },
+  { name: "구련보등", hand: "11123456789999m", includes: ["구련보등"], excludes: ["청일색"] },
 ];
 
 cases.forEach((testCase) => {

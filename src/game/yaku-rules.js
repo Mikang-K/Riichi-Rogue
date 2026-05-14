@@ -1,9 +1,11 @@
 import {
   DRAGONS,
+  WINDS,
   SUITS,
   groupHasTerminal,
   groupHasTerminalOrHonor,
   isDragon,
+  isGreen,
   isHonor,
   isSimple,
   isTerminal,
@@ -17,6 +19,11 @@ export const tileYakuRules = [
   ["honroto", ({ tiles }) => tiles.every(isTerminalOrHonor)],
   ["honitsu", ({ tiles }) => hasOneNumberSuit(tiles) && tiles.some(isHonor)],
   ["chinitsu", ({ tiles }) => hasOneNumberSuit(tiles) && tiles.every((tile) => !isHonor(tile))],
+  ["kokushiMusou", ({ arrangements }) => arrangements.some((item) => item.type === "kokushi")],
+  ["tsuuiiso", ({ tiles }) => tiles.every(isHonor)],
+  ["chinroto", ({ tiles }) => tiles.every(isTerminal)],
+  ["ryuiso", ({ tiles }) => tiles.every(isGreen)],
+  ["churenPoto", ({ tiles }) => hasChurenPoto(tiles)],
 ];
 
 export const standardYakuRules = [
@@ -33,12 +40,17 @@ export const standardYakuRules = [
   ["junchan", ({ standardArrangements }) => standardArrangements.some(isJunchan)],
   ["iipeko", ({ standardArrangements }) => standardArrangements.some((item) => sequencePairCount(item) >= 1)],
   ["ryanpeko", ({ standardArrangements }) => standardArrangements.some((item) => sequencePairCount(item) >= 2)],
+  ["suanko", ({ standardArrangements }) => standardArrangements.some((item) => triplets(item).length === 4)],
+  ["daisangen", ({ standardArrangements }) => standardArrangements.some(hasDaisangen)],
+  ["shosushi", ({ standardArrangements }) => standardArrangements.some(hasShosushi)],
+  ["daisushi", ({ standardArrangements }) => standardArrangements.some(hasDaisushi)],
 ];
 
 export const excludedBy = {
   chinitsu: ["honitsu"],
   junchan: ["chanta"],
   ryanpeko: ["iipeko"],
+  daisushi: ["shosushi"],
 };
 
 function isPinfu(arrangement) {
@@ -75,6 +87,20 @@ function hasShosangen(arrangement) {
   return dragonTriplets.length === 2 && pair.suit === "z" && DRAGONS.includes(pair.value);
 }
 
+function hasDaisangen(arrangement) {
+  return DRAGONS.every((dragon) => triplets(arrangement).some((meld) => meld.tiles[0].suit === "z" && meld.tiles[0].value === dragon));
+}
+
+function hasShosushi(arrangement) {
+  const windTriplets = triplets(arrangement).filter((meld) => meld.tiles[0].suit === "z" && WINDS.includes(meld.tiles[0].value));
+  const pair = parseKey(arrangement.pair);
+  return windTriplets.length === 3 && pair.suit === "z" && WINDS.includes(pair.value);
+}
+
+function hasDaisushi(arrangement) {
+  return WINDS.every((wind) => triplets(arrangement).some((meld) => meld.tiles[0].suit === "z" && meld.tiles[0].value === wind));
+}
+
 function isChanta(arrangement) {
   const groups = [...arrangement.melds, pairGroup(arrangement.pair)];
   return arrangement.melds.some((meld) => meld.type === "sequence")
@@ -99,6 +125,18 @@ function sequencePairCount(arrangement) {
 function hasOneNumberSuit(tiles) {
   const suits = new Set(tiles.filter((tile) => !isHonor(tile)).map((tile) => tile.suit));
   return suits.size === 1;
+}
+
+function hasChurenPoto(tiles) {
+  const numberTiles = tiles.filter((tile) => !isHonor(tile));
+  if (numberTiles.length !== 14 || !hasOneNumberSuit(numberTiles)) return false;
+
+  const counts = new Map();
+  numberTiles.forEach((tile) => counts.set(tile.value, (counts.get(tile.value) ?? 0) + 1));
+
+  return (counts.get(1) ?? 0) >= 3
+    && (counts.get(9) ?? 0) >= 3
+    && [2, 3, 4, 5, 6, 7, 8].every((value) => (counts.get(value) ?? 0) >= 1);
 }
 
 function triplets(arrangement) {

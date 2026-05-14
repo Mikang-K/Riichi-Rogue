@@ -53,6 +53,10 @@ export function isTerminalOrHonor(tile) {
   return isTerminal(tile) || isHonor(tile);
 }
 
+export function isGreen(tile) {
+  return (tile.suit === "s" && [2, 3, 4, 6, 8].includes(tile.value)) || (tile.suit === "z" && tile.value === "F");
+}
+
 export function meldKey(meld) {
   const first = meld.tiles[0];
   return meld.type === "sequence" ? `${first.suit}${first.value}` : keyOf(first);
