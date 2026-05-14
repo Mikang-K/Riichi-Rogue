@@ -196,16 +196,18 @@ export const relicPool = [
 ];
 
 export function newRun() {
-  const deck = shuffle(buildDeck());
-  const dora = draw(deck, 1)[0];
-  const hand = sortTiles(draw(deck, 14));
+  const wall = setupWall();
+  const hand = sortTiles(draw(wall.liveWall, 14));
 
   return {
     mode: "main",
-    deck,
+    deck: wall.liveWall,
     hand,
     selected: [],
-    dora,
+    dora: getVisibleDoraIndicators(wall.doraState)[0],
+    doraState: wall.doraState,
+    deadWall: wall.deadWall,
+    kan: emptyKanState(),
     roundIndex: 0,
     maxDiscards: BASE_MAX_DISCARDS,
     discardsLeft: BASE_MAX_DISCARDS,
@@ -219,12 +221,20 @@ export function newRun() {
 }
 
 export function newTitle() {
+  const doraState = {
+    indicators: [fixedTile("m", 1, "title-dora")],
+    uraIndicators: [],
+    revealedCount: 1,
+  };
   return {
     mode: "title",
     deck: [],
     hand: [],
     selected: [],
-    dora: fixedTile("m", 1, "title-dora"),
+    dora: getVisibleDoraIndicators(doraState)[0],
+    doraState,
+    deadWall: emptyDeadWall(),
+    kan: emptyKanState(),
     roundIndex: 0,
     maxDiscards: 0,
     discardsLeft: 0,
@@ -260,6 +270,21 @@ export function newTutorial() {
     hand,
     selected: [],
     dora: fixedTile("m", 2, "tutorial-dora"),
+    doraState: {
+      indicators: [fixedTile("m", 2, "tutorial-dora")],
+      uraIndicators: [fixedTile("p", 6, "tutorial-ura-dora")],
+      revealedCount: 1,
+    },
+    deadWall: {
+      rinshanTiles: [
+        fixedTile("m", 1, "tutorial-rinshan-1"),
+        fixedTile("m", 9, "tutorial-rinshan-2"),
+        fixedTile("s", 1, "tutorial-rinshan-3"),
+        fixedTile("s", 9, "tutorial-rinshan-4"),
+      ],
+      drawsUsed: 0,
+    },
+    kan: emptyKanState(),
     roundIndex: 0,
     maxDiscards: TUTORIAL_MAX_DISCARDS,
     discardsLeft: TUTORIAL_MAX_DISCARDS,
@@ -272,15 +297,17 @@ export function newTutorial() {
 }
 
 export function startRound(state) {
-  const deck = shuffle(buildDeck());
-  const dora = draw(deck, 1)[0];
+  const wall = setupWall();
   return {
     ...state,
     mode: "main",
-    deck,
-    hand: sortTiles(draw(deck, 14)),
+    deck: wall.liveWall,
+    hand: sortTiles(draw(wall.liveWall, 14)),
     selected: [],
-    dora,
+    dora: getVisibleDoraIndicators(wall.doraState)[0],
+    doraState: wall.doraState,
+    deadWall: wall.deadWall,
+    kan: emptyKanState(),
     discardsLeft: state.maxDiscards,
     riichi: emptyRiichiState(),
     status: "playing",
@@ -305,6 +332,7 @@ export function exchangeSelected(state) {
     hand: sortTiles([...keep, ...replacements]),
     selected: [],
     discardsLeft: state.discardsLeft - 1,
+    kan: clearRinshanState(state.kan),
     message: state.mode === "tutorial"
       ? "좋아요. 이제 4몸통+1머리 형태가 완성됐습니다. 조합 제출을 눌러 보세요."
       : `${replacements.length}장을 교환했습니다.`,
@@ -337,7 +365,7 @@ export function declareRiichi(state) {
 export function submitHand(state) {
   if (!canAct(state)) return state;
   if (state.riichi?.active && state.riichi.phase !== "ready") return state;
-  const result = scoreHand(state.hand, state.dora, state.relics, getScoreContext(state));
+  const result = scoreHand(getScoringTiles(state), getDoraState(state), state.relics, getScoreContext(state));
   return finishScoredHand(state, result);
 }
 
@@ -356,6 +384,7 @@ export function advanceRiichi(state) {
     hand,
     selected: [],
     discardsLeft: state.discardsLeft - 1,
+    kan: clearRinshanState(state.kan),
     riichi: {
       ...state.riichi,
       phase: "drawing",
@@ -381,6 +410,72 @@ export function advanceRiichi(state) {
 
   if (current.discardsLeft <= 0) return failRiichi(current);
   return current;
+}
+
+export function getAvailableKans(state) {
+  if (!canAct(state) || state.riichi?.active) return [];
+  const doraState = getDoraState(state);
+  const deadWall = state.deadWall ?? emptyDeadWall();
+  if (deadWall.rinshanTiles.length === 0) return [];
+  if (doraState.revealedCount >= doraState.indicators.length) return [];
+
+  const counts = countTiles(state.hand);
+  return [...counts.entries()]
+    .filter(([, count]) => count >= 4)
+    .map(([key]) => {
+      const tiles = state.hand.filter((tile) => `${tile.suit}${tile.value}` === key);
+      return {
+        key,
+        tile: tiles[0],
+        tiles,
+      };
+    });
+}
+
+export function declareKan(state, faceKey) {
+  const kan = getAvailableKans(state).find((item) => item.key === faceKey);
+  if (!kan) return state;
+
+  const deadWall = state.deadWall ?? emptyDeadWall();
+  const rinshanTile = draw(deadWall.rinshanTiles, 1)[0];
+  if (!rinshanTile) return state;
+
+  const kanTileIds = new Set(kan.tiles.map((tile) => tile.copyId));
+  const hand = sortTiles([
+    ...state.hand.filter((tile) => !kanTileIds.has(tile.copyId)),
+    rinshanTile,
+  ]);
+  const nextDoraState = {
+    ...getDoraState(state),
+    revealedCount: Math.min(getDoraState(state).revealedCount + 1, getDoraState(state).indicators.length),
+  };
+  const nextKan = {
+    ...(state.kan ?? emptyKanState()),
+    declaredCount: (state.kan?.declaredCount ?? 0) + 1,
+    sets: [...(state.kan?.sets ?? []), { type: "closedKan", tiles: kan.tiles }],
+    lastRinshanTileId: rinshanTile.copyId,
+    rinshanReady: false,
+  };
+  const rinshanReady = analyzeHand(getScoringTiles({ ...state, hand, kan: nextKan })).isComplete;
+
+  return {
+    ...state,
+    hand,
+    selected: [],
+    dora: getVisibleDoraIndicators(nextDoraState)[0],
+    doraState: nextDoraState,
+    deadWall: {
+      rinshanTiles: deadWall.rinshanTiles,
+      drawsUsed: (deadWall.drawsUsed ?? 0) + 1,
+    },
+    kan: {
+      ...nextKan,
+      rinshanReady,
+    },
+    message: rinshanReady
+      ? `${tileName(kan.tile)} 깡. 영상패 ${tileName(rinshanTile)}로 화료했습니다. 조합 제출을 눌러 점수를 확정하세요.`
+      : `${tileName(kan.tile)} 깡. 영상패 ${tileName(rinshanTile)}를 가져오고 도라가 하나 더 공개되었습니다.`,
+  };
 }
 
 function failRiichi(state) {
@@ -456,7 +551,8 @@ export function scoreHand(tiles, dora, relics = [], context = {}) {
   const counts = countTiles(tiles);
   const analysis = analyzeHand(tiles);
   const yaku = analysis.isComplete ? evaluateYaku(tiles, analysis, context) : [];
-  const doraCount = tiles.filter((tile) => sameFace(tile, dora)).length;
+  const doraBreakdown = getDoraBreakdown(tiles, dora, context);
+  const doraCount = doraBreakdown.totalCount;
   const tileScore = tiles.reduce((sum, tile) => sum + getTileBaseScore(tile), 0);
   const yakuScore = yaku.reduce((sum, item) => sum + item.score, 0);
   const doraScore = analysis.isComplete ? doraCount * DORA_SCORE : 0;
@@ -482,6 +578,10 @@ export function scoreHand(tiles, dora, relics = [], context = {}) {
     yaku,
     doraCount,
     doraHan: doraCount,
+    doraIndicators: doraBreakdown.doraIndicators,
+    uraDoraIndicators: doraBreakdown.uraDoraIndicators,
+    regularDoraCount: doraBreakdown.regularCount,
+    uraDoraCount: doraBreakdown.uraCount,
     doraScore,
     relicBonuses,
     relicHan: relicBonuses.map(({ relic, bonus }) => ({ relic, han: Math.floor(bonus.yakuScoreBonus / LEGACY_HAN_SCORE) })).filter((item) => item.han > 0),
@@ -499,6 +599,11 @@ export function scoreHand(tiles, dora, relics = [], context = {}) {
     totalScore,
     totalHan,
   };
+}
+
+export function getScoringTiles(state) {
+  const kanMeldTiles = (state.kan?.sets ?? []).flatMap((set) => set.tiles.slice(0, 3));
+  return [...state.hand, ...kanMeldTiles];
 }
 
 export function tileLabel(tile) {
@@ -563,9 +668,14 @@ function getRiichiMultiplierBonus(context) {
 }
 
 function getScoreContext(state) {
-  if (!state.riichi?.active) return {};
+  const context = {
+    rinshan: state.kan?.rinshanReady === true,
+  };
+  if (!state.riichi?.active) return context;
   return {
+    ...context,
     riichi: true,
+    includeUraDora: state.riichi.phase === "ready",
     riichiAttemptsUsed: state.riichi.attemptsUsed,
     discardsLeft: state.discardsLeft,
   };
@@ -583,6 +693,30 @@ function emptyRiichiState() {
   };
 }
 
+function emptyKanState() {
+  return {
+    declaredCount: 0,
+    sets: [],
+    lastRinshanTileId: null,
+    rinshanReady: false,
+  };
+}
+
+function clearRinshanState(kan = emptyKanState()) {
+  return {
+    ...kan,
+    lastRinshanTileId: null,
+    rinshanReady: false,
+  };
+}
+
+function emptyDeadWall() {
+  return {
+    rinshanTiles: [],
+    drawsUsed: 0,
+  };
+}
+
 function scoreToCoins(score) {
   return Math.max(1, Math.floor(score / 25));
 }
@@ -597,6 +731,65 @@ function buildDeck() {
       ...face,
       copyId: `${face.suit}${face.value}-${copy}-${crypto.randomUUID()}`,
     })),
+  );
+}
+
+function setupWall() {
+  const deck = shuffle(buildDeck());
+  const doraState = {
+    indicators: draw(deck, 5),
+    uraIndicators: draw(deck, 5),
+    revealedCount: 1,
+  };
+  return {
+    liveWall: deck,
+    doraState,
+    deadWall: {
+      rinshanTiles: draw(deck, 4),
+      drawsUsed: 0,
+    },
+  };
+}
+
+function getDoraState(state) {
+  if (state?.doraState) return state.doraState;
+  if (state?.dora) return getDoraState(state.dora);
+  if (Array.isArray(state?.indicators)) return state;
+  if (state?.suit && Object.hasOwn(state, "value")) {
+    return { indicators: [state], uraIndicators: [], revealedCount: 1 };
+  }
+  return { indicators: [], uraIndicators: [], revealedCount: 0 };
+}
+
+export function getVisibleDoraIndicators(doraInput) {
+  const doraState = doraInput?.doraState ? doraInput.doraState : getDoraState(doraInput);
+  return doraState.indicators.slice(0, doraState.revealedCount);
+}
+
+export function getVisibleUraDoraIndicators(doraInput, context = {}) {
+  if (!context.includeUraDora) return [];
+  const doraState = doraInput?.doraState ? doraInput.doraState : getDoraState(doraInput);
+  return doraState.uraIndicators.slice(0, doraState.revealedCount);
+}
+
+function getDoraBreakdown(tiles, doraInput, context) {
+  const doraIndicators = getVisibleDoraIndicators(doraInput);
+  const uraDoraIndicators = getVisibleUraDoraIndicators(doraInput, context);
+  const regularCount = countMatchingDora(tiles, doraIndicators);
+  const uraCount = countMatchingDora(tiles, uraDoraIndicators);
+  return {
+    doraIndicators,
+    uraDoraIndicators,
+    regularCount,
+    uraCount,
+    totalCount: regularCount + uraCount,
+  };
+}
+
+function countMatchingDora(tiles, indicators) {
+  return indicators.reduce(
+    (sum, indicator) => sum + tiles.filter((tile) => sameFace(tile, indicator)).length,
+    0,
   );
 }
 

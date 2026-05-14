@@ -16,6 +16,7 @@ import {
 
 export const tileYakuRules = [
   ["riichi", ({ riichi }) => Boolean(riichi)],
+  ["rinshanKaiho", ({ rinshan }) => Boolean(rinshan)],
   ["tanyao", ({ tiles }) => tiles.every(isSimple)],
   ["honroto", ({ tiles }) => tiles.every(isTerminalOrHonor)],
   ["honitsu", ({ tiles }) => hasOneNumberSuit(tiles) && tiles.some(isHonor)],

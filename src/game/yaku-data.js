@@ -10,6 +10,16 @@ export const yakuDefinitions = [
     exampleTiles: "123m 456m 789p 123s 55m",
   },
   {
+    id: "rinshanKaiho",
+    name: "영상개화",
+    hanClosed: 1,
+    hanOpen: 1,
+    score: 10,
+    implemented: true,
+    text: "깡 선언 후 영상패로 손패가 완성되면 붙습니다.",
+    example: "깡 후 영상패로 완성",
+  },
+  {
     id: "menzenTsumo",
     name: "멘젠쯔모",
     hanClosed: 1,

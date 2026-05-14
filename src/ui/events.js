@@ -2,6 +2,7 @@ import {
   toggleTile,
   exchangeSelected,
   declareRiichi,
+  declareKan,
   advanceRiichi,
   submitHand,
   newRun,
@@ -34,6 +35,7 @@ export function initEvents({ getState, setState, getUiState, setUiState, rerende
     const action = e.target.closest("[data-action]")?.dataset.action;
     const tileId = e.target.closest("[data-tile]")?.dataset.tile;
     const relicId = e.target.closest("[data-relic]")?.dataset.relic;
+    const kanFace = e.target.closest("[data-kan-face]")?.dataset.kanFace;
     const uiState = getUiState();
 
     if (action !== "toggle-music") {
@@ -61,6 +63,10 @@ export function initEvents({ getState, setState, getUiState, setUiState, rerende
         setState(declareRiichi(getState()));
         rerender();
         if (["declared", "drawing"].includes(getState().riichi?.phase)) scheduleRiichiAdvance();
+        break;
+      case "declare-kan":
+        setState(declareKan(getState(), kanFace));
+        rerender();
         break;
       case "submit":
         clearRiichiTimer();

@@ -278,16 +278,24 @@ h2 {
 }
 
 .dora-tile {
-  display: inline-grid;
-  place-items: center;
-  width: var(--mahjong-tile-width);
-  height: var(--mahjong-tile-size);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: var(--mahjong-tile-width);
+  min-height: var(--mahjong-tile-size);
   padding: 0;
   border-radius: 8px;
   background: transparent;
   box-shadow: none;
   color: #1d221c;
   line-height: 1;
+}
+
+.dora-tile .tile-face {
+  width: calc(var(--mahjong-tile-width) * 0.72);
+  height: calc(var(--mahjong-tile-size) * 0.72);
 }
 
 .table {
@@ -297,6 +305,42 @@ h2 {
   background: #214b3e;
   border: 1px solid rgba(245, 240, 230, 0.16);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.table-layout {
+  display: grid;
+  grid-template-columns: minmax(82px, 0.18fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+}
+
+.play-area {
+  min-width: 0;
+}
+
+.kan-area {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--mahjong-tile-size);
+}
+
+.kan-set {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 5px;
+  border: 1px solid rgba(245, 240, 230, 0.18);
+  border-radius: 8px;
+  background: rgba(20, 24, 20, 0.32);
+}
+
+.kan-set-tile {
+  display: inline-grid;
+  width: calc(var(--mahjong-tile-width) * 0.54);
+  height: calc(var(--mahjong-tile-size) * 0.54);
 }
 
 .hand {
@@ -342,6 +386,17 @@ h2 {
   box-shadow: 0 10px 0 rgba(214, 165, 72, 0.26);
   outline: 2px solid #f3c161;
   outline-offset: 1px;
+}
+
+.tile.kan-candidate {
+  box-shadow: 0 10px 0 rgba(92, 170, 188, 0.24);
+  outline: 2px solid #5caabc;
+  outline-offset: 2px;
+}
+
+.tile.kan-candidate:hover,
+.tile.kan-candidate:focus-visible {
+  transform: translateY(-6px);
 }
 
 .table.is-riichi {
@@ -816,6 +871,17 @@ h2 {
 
   .hand {
     grid-template-columns: repeat(7, var(--mahjong-tile-width));
+  }
+
+  .table-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .kan-area {
+    min-height: 0;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
   }
 
   .reward-grid {

@@ -7,9 +7,12 @@ import {
   relicPool,
   relicRarities,
   getAvailableRiichi,
+  getAvailableKans,
   declareRiichi,
+  declareKan,
   advanceRiichi,
   submitHand,
+  getScoringTiles,
 } from "../src/game.js";
 
 const cases = [
@@ -78,6 +81,32 @@ if (incompleteScore.yakuCompletionMultiplier !== 1 || incompleteScore.globalMult
   throw new Error("미완성 손패에 역 완성 배수가 적용되고 있습니다.");
 }
 
+if (run.doraState.indicators.length !== 5 || run.doraState.uraIndicators.length !== 5 || run.deadWall.rinshanTiles.length !== 4) {
+  throw new Error("새 라운드가 도라 표시패, 뒷도라 표시패, 영상패를 별도 패산으로 준비하지 못했습니다.");
+}
+
+const multiDoraState = {
+  indicators: [
+    { suit: "m", value: 1, copyId: "dora-m1" },
+    { suit: "p", value: 2, copyId: "dora-p2" },
+  ],
+  uraIndicators: [
+    { suit: "s", value: 7, copyId: "ura-s7" },
+    { suit: "m", value: 1, copyId: "ura-m1" },
+  ],
+  revealedCount: 2,
+};
+const multiDoraHand = parseHand("111m 234p 345p 456s 77s");
+const visibleDoraScore = scoreHand(multiDoraHand, multiDoraState);
+if (visibleDoraScore.doraCount !== 4 || visibleDoraScore.uraDoraCount !== 0) {
+  throw new Error("복수 공개 도라가 올바르게 합산되지 않았습니다.");
+}
+
+const uraDoraScore = scoreHand(multiDoraHand, multiDoraState, [], { riichi: true, includeUraDora: true });
+if (uraDoraScore.doraCount !== 9 || uraDoraScore.uraDoraCount !== 5) {
+  throw new Error("리치 화료 컨텍스트에서 뒷도라가 공개 도라 수만큼 적용되지 않았습니다.");
+}
+
 const riichiOnlyState = {
   mode: "main",
   deck: [{ suit: "z", value: "E", copyId: "riichi-draw-east" }],
@@ -122,12 +151,73 @@ if (declaredRiichiScore.riichiMultiplierBonus <= 0) {
   throw new Error("리치 화료에 리치 배율 보너스가 적용되지 않았습니다.");
 }
 
+const kanState = {
+  mode: "main",
+  deck: [],
+  hand: parseHand("1111m 234p 345p 456s 7s"),
+  selected: [],
+  dora: { suit: "m", value: 9, copyId: "kan-dora" },
+  doraState: {
+    indicators: [
+      { suit: "m", value: 9, copyId: "kan-dora-1" },
+      { suit: "p", value: 9, copyId: "kan-dora-2" },
+      { suit: "s", value: 9, copyId: "kan-dora-3" },
+      { suit: "z", value: "E", copyId: "kan-dora-4" },
+      { suit: "z", value: "S", copyId: "kan-dora-5" },
+    ],
+    uraIndicators: [],
+    revealedCount: 1,
+  },
+  deadWall: {
+    rinshanTiles: [{ suit: "s", value: 7, copyId: "kan-rinshan-7s" }],
+    drawsUsed: 0,
+  },
+  kan: { declaredCount: 0, sets: [], lastRinshanTileId: null, rinshanReady: false },
+  roundIndex: 0,
+  maxDiscards: 1,
+  discardsLeft: 1,
+  riichi: { active: false, exchangeTileId: null, waits: [], attemptsUsed: 0 },
+  relics: [],
+  coins: 0,
+  status: "playing",
+  rewardOptions: [],
+  message: "",
+};
+
+const kanOptions = getAvailableKans(kanState);
+if (kanOptions.length !== 1 || kanOptions[0].key !== "m1") {
+  throw new Error("같은 패 4장을 깡 후보로 찾지 못했습니다.");
+}
+
+const afterKan = declareKan(kanState, "m1");
+if (afterKan.doraState.revealedCount !== 2 || afterKan.deadWall.drawsUsed !== 1 || afterKan.deadWall.rinshanTiles.length !== 0) {
+  throw new Error("깡 선언 후 도라 추가 공개 또는 영상패 소비가 올바르지 않습니다.");
+}
+
+const kanTileIds = new Set(kanState.hand.filter((tile) => tile.suit === "m" && tile.value === 1).map((tile) => tile.copyId));
+if (afterKan.hand.some((tile) => kanTileIds.has(tile.copyId))) {
+  throw new Error("깡한 패가 손패에 남아 있습니다.");
+}
+
+if (afterKan.kan.sets[0].tiles.length !== 4) {
+  throw new Error("깡 세트가 왼쪽 표시용 4장을 보관하지 못했습니다.");
+}
+
+if (getScoringTiles(afterKan).length !== 14) {
+  throw new Error("깡 후 판정용 패가 14장으로 구성되지 않았습니다.");
+}
+
+const rinshanScore = scoreHand(getScoringTiles(afterKan), afterKan.doraState, [], { rinshan: afterKan.kan.rinshanReady });
+if (!rinshanScore.yaku.some((item) => item.id === "rinshanKaiho")) {
+  throw new Error("깡 직후 영상패로 완성된 손패에 영상개화가 붙지 않았습니다.");
+}
+
 const submittedRiichi = submitHand(advancedRiichi);
 if (submittedRiichi.status !== "reward" && submittedRiichi.status !== "won") {
   throw new Error("리치 성공 후 조합 제출로 다음 흐름에 진입하지 못했습니다.");
 }
 
-console.log(`Yaku checks passed: ${cases.length + 12}`);
+console.log(`Yaku checks passed: ${cases.length + 22}`);
 
 function namesFor(handText) {
   return scoreHand(parseHand(handText), { suit: "m", value: 1, copyId: "test-dora" }).yaku.map((item) => item.name);

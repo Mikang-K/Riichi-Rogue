@@ -12,7 +12,7 @@ export function renderScore(score) {
       <li><span>패 점수 보너스</span><strong>+${score.tileScoreBonus}점</strong></li>
       <li><span>패 배수</span><strong>x${formatMultiplier(score.tileMultiplier)}</strong></li>
       ${yaku}
-      <li><span>도라</span><strong>${score.doraScore}점</strong></li>
+      <li><span>도라</span><strong>${score.doraScore}점 (${score.regularDoraCount ?? score.doraCount}장${score.uraDoraCount ? `, 뒷도라 ${score.uraDoraCount}장` : ""})</strong></li>
       ${relics}
       ${score.riichiMultiplierBonus ? `<li><span>리치 보너스</span><strong>x+${formatMultiplier(score.riichiMultiplierBonus)}</strong></li>` : ""}
       <li><span>역 배수</span><strong>x${formatMultiplier(score.yakuMultiplier)}</strong></li>
