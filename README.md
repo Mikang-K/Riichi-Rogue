@@ -1,51 +1,68 @@
 # Riichi Rogue
 
-Riichi Rogue is a small browser roguelite prototype inspired by riichi mahjong and score-building games. The player draws a 14-tile hand, exchanges selected tiles within a limited number of discards, then submits the hand to beat the current stage score target.
+리치 마작의 패 조합 규칙을 로그라이트식 점수 빌드로 재해석한 브라우저 게임 프로토타입입니다. 전통적인 마작의 "완성 패" 재미를 살리면서도, 미완성 손패도 점수를 얻을 수 있게 만들어 유물, 배율, 패 점수 성장으로 다양한 전략이 나오도록 설계했습니다.
 
-## Current Gameplay
+## 프로젝트 요약
 
-- Each stage has a `targetScore`.
-- Every hand can be scored, even when it is not a complete mahjong hand.
-- Number tiles score their face value.
-- Honor tiles score `10` points.
-- Complete hands can additionally earn yaku score and dora score.
-- Relics can modify score through bonuses and multipliers.
+| 항목 | 내용 |
+| --- | --- |
+| 프로젝트 유형 | 싱글 페이지 브라우저 게임 프로토타입 |
+| 장르 | 리치 마작 기반 로그라이트 점수 빌드 게임 |
+| 개발 형태 | Vanilla JavaScript, HTML, CSS |
+| 실행 환경 | Node.js 정적 서버 + 브라우저 |
+| 핵심 경험 | 손패 교환, 조합 제출, 목표 점수 돌파, 유물 선택, 라운드 진행 |
+| 현재 상태 | 플레이 가능한 MVP |
 
-The current score formula is:
+## 기획 의도
+
+일반적인 리치 마작은 정해진 완성 형태와 역을 만드는 데 초점이 있습니다. 이 프로젝트는 그 구조를 기반으로 하되, 로그라이트 게임처럼 매 라운드마다 점수 목표를 넘기고 보상을 선택하는 흐름을 붙였습니다.
+
+가장 중요한 설계 방향은 "완성하지 못한 패도 의미 있게 만들기"였습니다. 완성 패는 역과 도라로 높은 점수를 얻고, 미완성 패는 패 자체의 기본 점수와 유물 보너스로 성장할 수 있습니다. 이 덕분에 플레이어는 단순히 정답 손패를 찾는 대신, 현재 보유 유물과 점수 구조에 맞춰 다른 선택을 할 수 있습니다.
+
+## 주요 구현 기능
+
+- 타이틀 화면에서 튜토리얼과 본 게임을 선택할 수 있습니다.
+- 튜토리얼은 고정된 손패와 고정 드로우로 기본 교환 흐름을 안내합니다.
+- 본 게임은 5개 라운드로 구성되어 있으며 라운드마다 목표 점수가 상승합니다.
+- 각 라운드는 무작위 손패 14장과 도라 표시패로 시작합니다.
+- 플레이어는 제한된 횟수 안에서 선택한 패를 교환할 수 있습니다.
+- 현재 손패는 실시간으로 점수 계산되어 목표 점수와 비교됩니다.
+- 라운드 통과 시 3개의 유물 후보 중 하나를 선택합니다.
+- 역 목록과 마작 용어 설명 모달을 제공합니다.
+- 마작패는 `src/source/`의 PNG 이미지 자산으로 렌더링합니다.
+
+## 핵심 시스템
+
+### 손패 분석
+
+`src/game.js`에서 14장 손패를 분석해 다음 형태를 판정합니다.
+
+- 일반 완성형: 몸통 4개 + 머리 1개
+- 치또이츠: 같은 패 2장짜리 쌍 7개
+- 미완성형: 완성되지 않았지만 패 기본 점수는 계산
+
+몸통 판정은 같은 패 3장 또는 같은 종류의 연속 숫자 3장으로 처리합니다. 자패는 숫자 연속이 없기 때문에 커쯔 판정만 가능합니다.
+
+### 점수 계산
+
+점수는 패 점수와 역 점수를 분리해 계산합니다. 이 구조는 이후 유물이 특정 점수 채널만 강화할 수 있도록 만든 확장 포인트입니다.
 
 ```text
-((tile score + tile score bonus) * tile multiplier
-  + (yaku score + dora score + yaku score bonus) * yaku multiplier)
-  * global multiplier
+((패 기본 점수 + 패 점수 보너스) * 패 배율
+  + (역 점수 + 도라 점수 + 역 점수 보너스) * 역 배율)
+  * 전체 배율
 ```
 
-This means two broad build paths are supported:
+이 계산식으로 두 가지 빌드 방향을 지원합니다.
 
-- **Hand-completion builds**: complete the hand to earn yaku and dora score.
-- **Tile-scaling builds**: use tile score, tile bonuses, and multipliers even with incomplete hands.
+| 빌드 | 설명 |
+| --- | --- |
+| 역 완성 빌드 | 손패를 완성해 역 점수와 도라 점수로 목표를 넘깁니다. |
+| 패 성장 빌드 | 미완성 손패라도 패 점수, 보너스, 배율을 키워 점수를 만듭니다. |
 
-## Yaku Scoring
+### 유물 확장 구조
 
-Yaku still keep their traditional han value as reference data, but stage clears use yaku score instead of han. Yaku score is intended to be balanced around completion difficulty: common yaku are worth less, difficult yaku are worth more.
-
-The current starting values are defined in `src/game.js`:
-
-| Yaku | Score |
-| --- | ---: |
-| Tanyao | 10 |
-| Pinfu | 12 |
-| Yakuhai | 12 |
-| Chiitoitsu | 24 |
-| Sanshoku Doujun | 28 |
-| Toitoi | 30 |
-| Honitsu | 42 |
-| Chinitsu | 80 |
-
-These values are balance placeholders and can later be replaced with values derived from simulation or playtest data.
-
-## Relic Extension Model
-
-Existing relics that return `score()` are still supported through a compatibility layer. New relics should prefer `effect()` so they can target a specific score channel:
+유물은 `src/game.js`의 `relicPool`에서 관리합니다. 기존 `score()` 방식과 새 `effect()` 방식을 함께 지원해, 단순 점수 보너스부터 특정 채널 배율까지 확장할 수 있습니다.
 
 ```js
 effect: ({ tiles, analysis, yaku, counts, doraCount }) => ({
@@ -57,52 +74,64 @@ effect: ({ tiles, analysis, yaku, counts, doraCount }) => ({
 })
 ```
 
-Player-state relics can still use `player()` for effects such as changing the maximum discard count.
+교환 횟수처럼 플레이어 상태를 바꾸는 유물은 `player()`로 분리했습니다.
 
-## Project Structure
-
-```text
-index.html          App entry point
-scripts/serve.mjs   Small local static server
-src/app.js          UI rendering and event binding
-src/game.js         Game state, hand analysis, scoring, relics
-src/styles.css      Application styling
+```js
+player: (player) => ({
+  ...player,
+  maxDiscards: player.maxDiscards + 1,
+})
 ```
 
-## Running Locally
+## 지원 역
+
+현재 MVP에서 점수화한 역은 다음과 같습니다. 전통적인 판수는 참고값으로 두고, 게임 진행에는 별도의 역 점수를 사용합니다.
+
+| 역 | 점수 | 구현 의도 |
+| --- | ---: | --- |
+| 탕야오 | 10 | 쉬운 완성 보상 |
+| 핑후 | 12 | 기본 순자형 완성 보상 |
+| 역패 | 12 | 자패 커쯔 보상 |
+| 치또이츠 | 24 | 특수 완성형 보상 |
+| 삼색동순 | 28 | 패턴 수집 보상 |
+| 또이또이 | 30 | 커쯔 중심 빌드 보상 |
+| 혼일색 | 42 | 한 종류 수패 + 자패 보상 |
+| 청일색 | 80 | 한 종류 수패만 쓰는 고난도 보상 |
+
+## 기술 구성
+
+| 영역 | 파일 | 역할 |
+| --- | --- | --- |
+| 진입점 | `index.html` | 앱 마운트와 ES 모듈 로드 |
+| UI | `src/app.js` | 화면 렌더링, 상태 전환, 이벤트 바인딩 |
+| 게임 로직 | `src/game.js` | 덱 생성, 손패 분석, 점수 계산, 라운드 진행, 유물 |
+| 타일 렌더링 | `src/tileArt.js` | 타일 코드와 PNG 이미지 매핑 |
+| 스타일 | `src/styles.css` | 반응형 레이아웃과 게임 UI 스타일 |
+| 서버 | `scripts/serve.mjs` | 로컬 정적 파일 서버 |
+
+
+## 실행 방법
+
+현재 외부 런타임 의존성은 없습니다. Node.js가 설치되어 있으면 실행할 수 있습니다.
 
 ```bash
 npm start
 ```
 
-The app runs at:
+기본 실행 주소는 다음과 같습니다.
 
 ```text
 http://localhost:4173
 ```
 
-Use a different port if needed:
+포트를 바꾸려면 `PORT` 환경 변수를 지정합니다.
 
 ```bash
 PORT=5000 npm start
 ```
 
-On Windows PowerShell:
+Windows PowerShell에서는 다음처럼 실행합니다.
 
 ```powershell
 $env:PORT=5000; npm start
 ```
-
-## Validation
-
-Run the syntax check:
-
-```bash
-npm run check
-```
-
-This checks `src/game.js` and `src/app.js` with Node's parser.
-
-## Notes
-
-This project intentionally bends mahjong rules for roguelite scoring. Incomplete hands are allowed to score so future relics can support strategies based on tile enhancement, tile-specific multipliers, and non-yaku scaling.

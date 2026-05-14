@@ -387,7 +387,7 @@ function applyRelicPlayerEffect(state, relic) {
   };
 }
 
-function canAct(state) {
+export function canAct(state) {
   return state.status === "playing" || state.status === "tutorial";
 }
 
