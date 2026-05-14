@@ -344,6 +344,86 @@ h2 {
   outline-offset: 1px;
 }
 
+.table.is-riichi {
+  border-color: rgba(243, 193, 97, 0.58);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 0 0 1px rgba(243, 193, 97, 0.16);
+}
+
+.tile.riichi-target {
+  animation: riichiPulse 450ms ease-in-out infinite alternate;
+  outline: 2px solid #f3c161;
+  outline-offset: 2px;
+}
+
+.tile.riichi-drawn {
+  animation: riichiDraw 420ms ease-out;
+  box-shadow: 0 12px 0 rgba(119, 178, 139, 0.26);
+  outline: 2px solid #77b28b;
+  outline-offset: 2px;
+}
+
+.tile.riichi-ready {
+  filter: saturate(1.08);
+}
+
+.riichi-trace {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-top: 14px;
+  color: #fff4c7;
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.riichi-trace-tile {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 4px 8px;
+  border: 1px solid rgba(245, 240, 230, 0.18);
+  border-radius: 8px;
+  background: rgba(20, 24, 20, 0.36);
+}
+
+.riichi-trace .tile-face {
+  width: calc(var(--mahjong-tile-width) * 0.48);
+  height: calc(var(--mahjong-tile-size) * 0.48);
+}
+
+.riichi-trace small {
+  color: #d7ded0;
+  font-size: 0.82rem;
+}
+
+@keyframes riichiPulse {
+  from {
+    transform: translateY(0);
+  }
+
+  to {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes riichiDraw {
+  from {
+    transform: translateY(-18px) scale(0.94);
+    opacity: 0.2;
+  }
+
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
 .tile-face {
   display: block;
   width: 100%;
@@ -377,7 +457,7 @@ h2 {
   font-weight: 800;
 }
 
-.actions button:nth-child(3),
+.actions button.secondary,
 .modal > button {
   background: #d7ded0;
 }

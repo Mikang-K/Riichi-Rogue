@@ -15,6 +15,7 @@ import {
 } from "./tile-utils.js";
 
 export const tileYakuRules = [
+  ["riichi", ({ riichi }) => Boolean(riichi)],
   ["tanyao", ({ tiles }) => tiles.every(isSimple)],
   ["honroto", ({ tiles }) => tiles.every(isTerminalOrHonor)],
   ["honitsu", ({ tiles }) => hasOneNumberSuit(tiles) && tiles.some(isHonor)],

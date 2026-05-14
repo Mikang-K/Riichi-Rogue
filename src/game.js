@@ -1,4 +1,5 @@
 import { analyzeHand } from "./game/hand-analysis.js";
+import { formatWaits, getRiichiState, isRiichiWinningHand } from "./game/riichi.js";
 import { evaluateYaku } from "./game/yaku-evaluator.js";
 import { HONORS, SUITS, countTiles, sameFace, sortTiles } from "./game/tile-utils.js";
 
@@ -29,6 +30,9 @@ const LEGACY_HAN_SCORE = 10;
 const DEFAULT_MULTIPLIER = 1;
 const YAKU_COMPLETION_MULTIPLIER_PER_HAN = 0.25;
 const MAX_YAKU_COMPLETION_MULTIPLIER_BONUS = 3;
+const RIICHI_YAKU_MULTIPLIER_BONUS = 0.75;
+const RIICHI_LEFTOVER_DISCARD_BONUS = 0.1;
+const MAX_RIICHI_YAKU_MULTIPLIER_BONUS = 1.5;
 export const relicRarities = {
   common: { label: "일반", weight: 70 },
   rare: { label: "희귀", weight: 25 },
@@ -205,6 +209,7 @@ export function newRun() {
     roundIndex: 0,
     maxDiscards: BASE_MAX_DISCARDS,
     discardsLeft: BASE_MAX_DISCARDS,
+    riichi: emptyRiichiState(),
     relics: [],
     coins: 0,
     status: "startReward",
@@ -223,6 +228,7 @@ export function newTitle() {
     roundIndex: 0,
     maxDiscards: 0,
     discardsLeft: 0,
+    riichi: emptyRiichiState(),
     relics: [],
     coins: 0,
     status: "title",
@@ -257,6 +263,7 @@ export function newTutorial() {
     roundIndex: 0,
     maxDiscards: TUTORIAL_MAX_DISCARDS,
     discardsLeft: TUTORIAL_MAX_DISCARDS,
+    riichi: emptyRiichiState(),
     relics: [relicPool[0]],
     coins: 0,
     status: "tutorial",
@@ -275,13 +282,14 @@ export function startRound(state) {
     selected: [],
     dora,
     discardsLeft: state.maxDiscards,
+    riichi: emptyRiichiState(),
     status: "playing",
     message: `${rounds[state.roundIndex].name} 시작.`,
   };
 }
 
 export function toggleTile(state, tileId) {
-  if (!canAct(state)) return state;
+  if (!canAct(state) || state.riichi?.active) return state;
   const selected = state.selected.includes(tileId)
     ? state.selected.filter((id) => id !== tileId)
     : [...state.selected, tileId];
@@ -289,7 +297,7 @@ export function toggleTile(state, tileId) {
 }
 
 export function exchangeSelected(state) {
-  if (!canAct(state) || state.discardsLeft <= 0 || state.selected.length === 0) return state;
+  if (!canAct(state) || state.riichi?.active || state.discardsLeft <= 0 || state.selected.length === 0) return state;
   const keep = state.hand.filter((tile) => !state.selected.includes(tile.copyId));
   const replacements = draw(state.deck, state.selected.length);
   return {
@@ -303,9 +311,92 @@ export function exchangeSelected(state) {
   };
 }
 
+export function declareRiichi(state) {
+  if (state.status !== "playing" || state.riichi?.active || state.discardsLeft <= 0) return state;
+  const riichiState = getRiichiState(state.hand, state.deck);
+  if (!riichiState.canRiichi) {
+    return { ...state, selected: [], message: "아직 리치를 선언할 수 없습니다. 한 장 교체로 화료 가능한 형태가 필요합니다." };
+  }
+
+  return {
+    ...state,
+    selected: [],
+    riichi: {
+      active: true,
+      phase: "declared",
+      exchangeTileId: riichiState.exchangeTileId,
+      waits: riichiState.waits,
+      attemptsUsed: 0,
+      lastDiscardedTile: null,
+      lastDrawnTile: null,
+    },
+    message: `리치 선언. 대기패: ${formatWaits(riichiState.waits, tileName)}`,
+  };
+}
+
 export function submitHand(state) {
   if (!canAct(state)) return state;
-  const result = scoreHand(state.hand, state.dora, state.relics);
+  if (state.riichi?.active && state.riichi.phase !== "ready") return state;
+  const result = scoreHand(state.hand, state.dora, state.relics, getScoreContext(state));
+  return finishScoredHand(state, result);
+}
+
+export function advanceRiichi(state) {
+  if (state.status !== "playing" || !["declared", "drawing"].includes(state.riichi?.phase)) return state;
+  const exchangeTile = state.hand.find((tile) => tile.copyId === state.riichi.exchangeTileId);
+  const replacement = draw(state.deck, 1)[0];
+  if (!exchangeTile || !replacement) {
+    return failRiichi(state);
+  }
+
+  const attemptsUsed = state.riichi.attemptsUsed + 1;
+  const hand = sortTiles([...state.hand.filter((tile) => tile.copyId !== exchangeTile.copyId), replacement]);
+  const current = {
+    ...state,
+    hand,
+    selected: [],
+    discardsLeft: state.discardsLeft - 1,
+    riichi: {
+      ...state.riichi,
+      phase: "drawing",
+      exchangeTileId: replacement.copyId,
+      attemptsUsed,
+      lastDiscardedTile: exchangeTile,
+      lastDrawnTile: replacement,
+    },
+    message: `리치 진행 중... ${attemptsUsed}회째 교체 (${tileName(exchangeTile)} → ${tileName(replacement)})`,
+  };
+
+  if (isRiichiWinningHand(current.hand)) {
+    return {
+      ...current,
+      riichi: {
+        ...current.riichi,
+        phase: "ready",
+        exchangeTileId: null,
+      },
+      message: `리치 성공! ${attemptsUsed}회 교체 끝에 ${tileName(replacement)} 대기로 화료했습니다. 조합 제출을 눌러 점수를 확정하세요.`,
+    };
+  }
+
+  if (current.discardsLeft <= 0) return failRiichi(current);
+  return current;
+}
+
+function failRiichi(state) {
+  return {
+    ...state,
+    status: "lost",
+    selected: [],
+    riichi: {
+      ...state.riichi,
+      phase: "failed",
+    },
+    message: "리치 실패. 남은 교체 횟수 안에 대기패를 가져오지 못했습니다.",
+  };
+}
+
+function finishScoredHand(state, result, successMessage = null) {
   const targetScore = state.mode === "tutorial" ? tutorialRound.targetScore : rounds[state.roundIndex].targetScore;
   if (result.totalScore < targetScore) {
     if (state.mode === "tutorial") {
@@ -325,7 +416,7 @@ export function submitHand(state) {
 
   const nextRoundIndex = state.roundIndex + 1;
   if (nextRoundIndex >= rounds.length) {
-    return { ...state, status: "won", coins: state.coins + scoreToCoins(result.totalScore), message: `최종 ${result.totalScore}점. 완주 성공!` };
+    return { ...state, status: "won", coins: state.coins + scoreToCoins(result.totalScore), message: successMessage ?? `최종 ${result.totalScore}점. 완주 성공!` };
   }
 
   return {
@@ -334,7 +425,7 @@ export function submitHand(state) {
     coins: state.coins + scoreToCoins(result.totalScore),
     selected: [],
     rewardOptions: getRewardOptions(state.relics),
-    message: `${result.totalScore}점으로 통과했습니다. 유물을 하나 고르세요.`,
+    message: successMessage ?? `${result.totalScore}점으로 통과했습니다. 유물을 하나 고르세요.`,
   };
 }
 
@@ -361,10 +452,10 @@ export function chooseRelic(state, relicId) {
   });
 }
 
-export function scoreHand(tiles, dora, relics = []) {
+export function scoreHand(tiles, dora, relics = [], context = {}) {
   const counts = countTiles(tiles);
   const analysis = analyzeHand(tiles);
-  const yaku = analysis.isComplete ? evaluateYaku(tiles, analysis) : [];
+  const yaku = analysis.isComplete ? evaluateYaku(tiles, analysis, context) : [];
   const doraCount = tiles.filter((tile) => sameFace(tile, dora)).length;
   const tileScore = tiles.reduce((sum, tile) => sum + getTileBaseScore(tile), 0);
   const yakuScore = yaku.reduce((sum, item) => sum + item.score, 0);
@@ -374,7 +465,10 @@ export function scoreHand(tiles, dora, relics = []) {
   const relicBonuses = relics
     .map((relic) => ({ relic, bonus: getRelicScoreBonus(relic, { tiles, analysis, yaku, counts, doraCount, doraHan: doraCount }) }))
     .filter((item) => hasScoreBonus(item.bonus));
-  const bonusTotals = relicBonuses.reduce(addScoreBonuses, emptyScoreBonus());
+  const riichiMultiplierBonus = getRiichiMultiplierBonus(context);
+  const bonusTotals = addScoreBonuses(relicBonuses.reduce(addScoreBonuses, emptyScoreBonus()), {
+    yakuMultiplierBonus: riichiMultiplierBonus,
+  });
   const tileMultiplier = DEFAULT_MULTIPLIER + bonusTotals.tileMultiplierBonus;
   const yakuMultiplier = DEFAULT_MULTIPLIER + bonusTotals.yakuMultiplierBonus;
   const globalMultiplier = yakuCompletionMultiplier + bonusTotals.globalMultiplierBonus;
@@ -399,6 +493,7 @@ export function scoreHand(tiles, dora, relics = []) {
     yakuScoreBonus: bonusTotals.yakuScoreBonus,
     yakuMultiplier,
     yakuScoreTotal,
+    riichiMultiplierBonus,
     yakuCompletionMultiplier,
     globalMultiplier,
     totalScore,
@@ -461,6 +556,33 @@ function getYakuCompletionMultiplier(yaku, totalHan) {
   return DEFAULT_MULTIPLIER + bonus;
 }
 
+function getRiichiMultiplierBonus(context) {
+  if (!context.riichi) return 0;
+  const leftoverBonus = Math.max(0, context.discardsLeft ?? 0) * RIICHI_LEFTOVER_DISCARD_BONUS;
+  return Math.min(MAX_RIICHI_YAKU_MULTIPLIER_BONUS, RIICHI_YAKU_MULTIPLIER_BONUS + leftoverBonus);
+}
+
+function getScoreContext(state) {
+  if (!state.riichi?.active) return {};
+  return {
+    riichi: true,
+    riichiAttemptsUsed: state.riichi.attemptsUsed,
+    discardsLeft: state.discardsLeft,
+  };
+}
+
+function emptyRiichiState() {
+  return {
+    active: false,
+    phase: "idle",
+    exchangeTileId: null,
+    waits: [],
+    attemptsUsed: 0,
+    lastDiscardedTile: null,
+    lastDrawnTile: null,
+  };
+}
+
 function scoreToCoins(score) {
   return Math.max(1, Math.floor(score / 25));
 }
@@ -494,6 +616,13 @@ function applyRelicPlayerEffect(state, relic) {
 
 export function canAct(state) {
   return state.status === "playing" || state.status === "tutorial";
+}
+
+export function getAvailableRiichi(state) {
+  if (state.status !== "playing" || state.riichi?.active || state.discardsLeft <= 0) {
+    return { canRiichi: false, exchangeTileId: null, waits: [] };
+  }
+  return getRiichiState(state.hand, state.deck);
 }
 
 function draw(deck, count) {

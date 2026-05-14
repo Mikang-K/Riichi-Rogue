@@ -1,4 +1,16 @@
-import { scoreHand, newTutorial, exchangeSelected, newRun, chooseRelic, relicPool, relicRarities } from "../src/game.js";
+import {
+  scoreHand,
+  newTutorial,
+  exchangeSelected,
+  newRun,
+  chooseRelic,
+  relicPool,
+  relicRarities,
+  getAvailableRiichi,
+  declareRiichi,
+  advanceRiichi,
+  submitHand,
+} from "../src/game.js";
 
 const cases = [
   { name: "삼색동순", hand: "234m 234p 234s 345s 66p", includes: ["삼색동순"] },
@@ -66,7 +78,56 @@ if (incompleteScore.yakuCompletionMultiplier !== 1 || incompleteScore.globalMult
   throw new Error("미완성 손패에 역 완성 배수가 적용되고 있습니다.");
 }
 
-console.log(`Yaku checks passed: ${cases.length + 7}`);
+const riichiOnlyState = {
+  mode: "main",
+  deck: [{ suit: "z", value: "E", copyId: "riichi-draw-east" }],
+  hand: parseHand("123m 456p 789s 555m Ez 2p"),
+  selected: [],
+  dora: { suit: "m", value: 1, copyId: "test-dora" },
+  roundIndex: 0,
+  maxDiscards: 1,
+  discardsLeft: 1,
+  riichi: { active: false, exchangeTileId: null, waits: [], attemptsUsed: 0 },
+  relics: [],
+  coins: 0,
+  status: "playing",
+  rewardOptions: [],
+  message: "",
+};
+
+const riichiState = getAvailableRiichi(riichiOnlyState);
+if (!riichiState.canRiichi) {
+  throw new Error("다른 역이 없는 완성 대기에서도 리치가 가능해야 합니다.");
+}
+
+const declaredRiichi = declareRiichi(riichiOnlyState);
+if (declaredRiichi.status !== "playing" || declaredRiichi.riichi.phase !== "declared" || declaredRiichi.discardsLeft !== 1) {
+  throw new Error("리치 선언 직후에는 라운드가 끝나지 않고 선언 상태로 유지되어야 합니다.");
+}
+
+const advancedRiichi = advanceRiichi(declaredRiichi);
+if (advancedRiichi.status !== "playing" || advancedRiichi.riichi.phase !== "ready" || advancedRiichi.discardsLeft !== 0) {
+  throw new Error("리치 성공 후 조합 제출 직전 상태로 유지되지 않았습니다.");
+}
+
+const declaredRiichiScore = scoreHand(advancedRiichi.hand, advancedRiichi.dora, advancedRiichi.relics, {
+  riichi: true,
+  discardsLeft: advancedRiichi.discardsLeft,
+});
+if (!declaredRiichiScore.isComplete || !declaredRiichiScore.yaku.some((item) => item.id === "riichi")) {
+  throw new Error("리치만으로 완성형 화료 역을 충족하지 못했습니다.");
+}
+
+if (declaredRiichiScore.riichiMultiplierBonus <= 0) {
+  throw new Error("리치 화료에 리치 배율 보너스가 적용되지 않았습니다.");
+}
+
+const submittedRiichi = submitHand(advancedRiichi);
+if (submittedRiichi.status !== "reward" && submittedRiichi.status !== "won") {
+  throw new Error("리치 성공 후 조합 제출로 다음 흐름에 진입하지 못했습니다.");
+}
+
+console.log(`Yaku checks passed: ${cases.length + 12}`);
 
 function namesFor(handText) {
   return scoreHand(parseHand(handText), { suit: "m", value: 1, copyId: "test-dora" }).yaku.map((item) => item.name);

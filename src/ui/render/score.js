@@ -14,6 +14,7 @@ export function renderScore(score) {
       ${yaku}
       <li><span>도라</span><strong>${score.doraScore}점</strong></li>
       ${relics}
+      ${score.riichiMultiplierBonus ? `<li><span>리치 보너스</span><strong>x+${formatMultiplier(score.riichiMultiplierBonus)}</strong></li>` : ""}
       <li><span>역 배수</span><strong>x${formatMultiplier(score.yakuMultiplier)}</strong></li>
       <li><span>역 완성 배수</span><strong>x${formatMultiplier(score.yakuCompletionMultiplier)}</strong></li>
       <li><span>전체 배수</span><strong>x${formatMultiplier(score.globalMultiplier)}</strong></li>

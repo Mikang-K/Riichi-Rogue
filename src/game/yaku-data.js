@@ -5,9 +5,9 @@ export const yakuDefinitions = [
     hanClosed: 1,
     hanOpen: null,
     score: 10,
-    implemented: false,
-    text: "문전 상태에서 텐파이를 선언하는 역입니다. 이 MVP에는 아직 리치 선언 버튼은 없습니다.",
-    example: "대기 완성 직전 선언",
+    implemented: true,
+    text: "한 장만 교체하면 화료 가능한 상태에서 선언합니다. 선언 후에는 지정된 한 장만 자동 교체하며, 리치만으로도 화료 역을 충족합니다.",
+    exampleTiles: "123m 456m 789p 123s 55m",
   },
   {
     id: "menzenTsumo",
