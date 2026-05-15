@@ -192,18 +192,6 @@ export function declareRiichi(state) {
     return { ...state, selected: [], message: "아직 리치를 선언할 수 없습니다. 한 장 교체로 완료 가능한 형태가 필요합니다." };
   }
 
-  if (riichiState.candidates.length === 1) {
-    return confirmRiichiDiscard({
-      ...state,
-      riichi: {
-        ...emptyRiichiState(),
-        active: true,
-        phase: "selectingDiscard",
-        candidates: riichiState.candidates,
-      },
-    }, riichiState.candidates[0].exchangeTileId);
-  }
-
   return {
     ...state,
     selected: [],
@@ -217,7 +205,17 @@ export function declareRiichi(state) {
       lastDiscardedTile: null,
       lastDrawnTile: null,
     },
-    message: "리치할 버림패를 선택하세요.",
+    message: "리치할 버림패를 선택하세요. 취소할 수도 있습니다.",
+  };
+}
+
+export function cancelRiichi(state) {
+  if (state.riichi?.phase !== "selectingDiscard") return state;
+  return {
+    ...state,
+    selected: [],
+    riichi: emptyRiichiState(),
+    message: "리치를 취소했습니다.",
   };
 }
 

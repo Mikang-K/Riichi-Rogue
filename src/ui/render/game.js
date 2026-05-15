@@ -124,6 +124,7 @@ function renderTable(state) {
       <div class="actions">
         <button data-action="exchange" ${exchangeDisabled ? "disabled" : ""}>선택패 교환</button>
         <button data-action="declare-riichi"${waitTitle} ${riichiDisabled ? "disabled" : ""}>리치</button>
+        ${state.riichi?.phase === "selectingDiscard" ? `<button class="secondary" data-action="cancel-riichi">리치 취소</button>` : ""}
         ${kanOptions.map((kan) => `<button data-action="declare-kan" data-kan-face="${kan.key}" title="${tileName(kan.tile)} 깡">깡</button>`).join("")}
         <button data-action="submit" ${submitDisabled ? "disabled" : ""}>조합 제출</button>
         <button class="secondary" data-action="${isTutorial ? "skip-tutorial" : "restart"}">${isTutorial ? "본 게임으로" : "새 게임"}</button>

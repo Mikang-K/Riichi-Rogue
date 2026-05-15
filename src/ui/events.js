@@ -3,6 +3,7 @@ import {
   exchangeSelected,
   declareRiichi,
   confirmRiichiDiscard,
+  cancelRiichi,
   declareKan,
   advanceRiichi,
   submitHand,
@@ -77,6 +78,11 @@ export function initEvents({ getState, setState, getUiState, setUiState, rerende
         setState(declareRiichi(getState()));
         rerender();
         if (["declared", "drawing"].includes(getState().riichi?.phase)) scheduleRiichiAdvance();
+        break;
+      case "cancel-riichi":
+        clearRiichiTimer();
+        setState(cancelRiichi(getState()));
+        rerender();
         break;
       case "declare-kan":
         setState(declareKan(getState(), kanFace));

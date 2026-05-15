@@ -12,6 +12,7 @@ import {
   getAvailableKans,
   declareRiichi,
   confirmRiichiDiscard,
+  cancelRiichi,
   declareKan,
   advanceRiichi,
   submitHand,
@@ -176,11 +177,21 @@ if (!riichiState.canRiichi) {
 }
 
 const declaredRiichi = declareRiichi(riichiOnlyState);
-if (declaredRiichi.status !== "playing" || declaredRiichi.riichi.phase !== "declared" || declaredRiichi.discardsLeft !== 1) {
-  throw new Error("리치 선언 직후에는 라운드가 끝나지 않고 선언 상태로 유지되어야 합니다.");
+if (declaredRiichi.status !== "playing" || declaredRiichi.riichi.phase !== "selectingDiscard" || declaredRiichi.discardsLeft !== 1) {
+  throw new Error("리치 버튼을 누른 직후에는 취소 가능한 버림패 선택 상태로 유지되어야 합니다.");
 }
 
-const advancedRiichi = advanceRiichi(declaredRiichi);
+const canceledRiichi = cancelRiichi(declaredRiichi);
+if (canceledRiichi.riichi.active || canceledRiichi.riichi.phase !== "idle" || canceledRiichi.discardsLeft !== 1) {
+  throw new Error("리치 취소가 리치 상태만 초기화하지 못했습니다.");
+}
+
+const confirmedSingleRiichi = confirmRiichiDiscard(declaredRiichi, declaredRiichi.riichi.candidates[0].exchangeTileId);
+if (confirmedSingleRiichi.riichi.phase !== "declared") {
+  throw new Error("단일 리치 후보 선택 후 선언 상태로 진입하지 못했습니다.");
+}
+
+const advancedRiichi = advanceRiichi(confirmedSingleRiichi);
 if (advancedRiichi.status !== "playing" || advancedRiichi.riichi.phase !== "ready" || advancedRiichi.discardsLeft !== 0) {
   throw new Error("리치 성공 후 조합 제출 직전 상태로 유지되지 않았습니다.");
 }
