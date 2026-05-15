@@ -107,17 +107,24 @@ export function renderReward(rewardOptions, title = "보상 선택", note = "") 
         <h2>${title}</h2>
         ${note ? `<p class="modal-note">${note}</p>` : ""}
         <div class="reward-grid">
-          ${rewardOptions.map((relic) => `
-            <button class="reward relic-${relic.rarity ?? "common"}" data-relic="${relic.id}">
-              <small>${formatRarity(relic.rarity)}</small>
-              <strong>${relic.name}</strong>
-              <span>${relic.text}</span>
+          ${rewardOptions.map((reward) => `
+            <button class="reward reward-${reward.type ?? "relic"} relic-${reward.rarity ?? "common"}" data-reward-id="${reward.id}">
+              <small>${formatRewardType(reward.type)} · ${formatRarity(reward.rarity)}</small>
+              <strong>${reward.name}</strong>
+              <span>${reward.text}</span>
             </button>
           `).join("")}
         </div>
       </div>
     </section>
   `;
+}
+
+function formatRewardType(type = "relic") {
+  return {
+    relic: "유물",
+    augment: "증강",
+  }[type] ?? "보상";
 }
 
 export function renderEnd(status, message) {

@@ -8,7 +8,7 @@ import {
   submitHand,
   newRun,
   newTutorial,
-  chooseRelic,
+  chooseReward,
 } from "../game.js";
 import { playSfx, startBackgroundMusic, toggleBackgroundMusic } from "./audio.js";
 
@@ -35,6 +35,7 @@ export function initEvents({ getState, setState, getUiState, setUiState, rerende
   document.querySelector("#app").addEventListener("click", (e) => {
     const action = e.target.closest("[data-action]")?.dataset.action;
     const tileId = e.target.closest("[data-tile]")?.dataset.tile;
+    const rewardId = e.target.closest("[data-reward-id]")?.dataset.rewardId;
     const relicId = e.target.closest("[data-relic]")?.dataset.relic;
     const kanFace = e.target.closest("[data-kan-face]")?.dataset.kanFace;
     const uiState = getUiState();
@@ -56,8 +57,8 @@ export function initEvents({ getState, setState, getUiState, setUiState, rerende
       return;
     }
 
-    if (relicId) {
-      setState(chooseRelic(getState(), relicId));
+    if (rewardId || relicId) {
+      setState(chooseReward(getState(), rewardId ?? relicId));
       rerender();
       return;
     }

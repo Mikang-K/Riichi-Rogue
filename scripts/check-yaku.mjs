@@ -4,6 +4,8 @@ import {
   exchangeSelected,
   newRun,
   chooseRelic,
+  chooseReward,
+  augmentPool,
   relicPool,
   relicRarities,
   getAvailableRiichi,
@@ -72,6 +74,17 @@ if (runWithRelic.status !== "playing" || runWithRelic.relics.length !== 1) {
   throw new Error("시작 유물 선택 후 본 게임이 시작되지 않습니다.");
 }
 
+const rewardAugment = augmentPool.find((augment) => augment.id === "tanyao-focus");
+const rewardState = {
+  ...runWithRelic,
+  status: "reward",
+  rewardOptions: [{ ...rewardAugment, type: "augment", item: rewardAugment }],
+};
+const runWithAugment = chooseReward(rewardState, "tanyao-focus");
+if (runWithAugment.status !== "playing" || runWithAugment.augments.length !== 1) {
+  throw new Error("증강 보상 선택 후 다음 라운드가 시작되지 않았습니다.");
+}
+
 const tanyaoScore = scoreHand(parseHand("234m 234p 345s 678m 66p"), { suit: "m", value: 1, copyId: "test-dora" });
 if (tanyaoScore.yakuCompletionMultiplier <= 1 || tanyaoScore.globalMultiplier <= 1) {
   throw new Error("역 완성 손패에 기본 배수가 적용되지 않습니다.");
@@ -80,6 +93,38 @@ if (tanyaoScore.yakuCompletionMultiplier <= 1 || tanyaoScore.globalMultiplier <=
 const incompleteScore = scoreHand(parseHand("123m 456m 789m 123p ESz"), { suit: "m", value: 1, copyId: "test-dora" });
 if (incompleteScore.yakuCompletionMultiplier !== 1 || incompleteScore.globalMultiplier !== 1) {
   throw new Error("미완성 손패에 역 완성 배수가 적용되고 있습니다.");
+}
+
+const tanyaoAugment = augmentPool.find((augment) => augment.id === "tanyao-focus");
+const tanyaoWithAugment = scoreHand(
+  parseHand("234m 234p 345s 678m 66p"),
+  { suit: "m", value: 1, copyId: "test-dora" },
+  [],
+  { augments: [tanyaoAugment] },
+);
+if (tanyaoWithAugment.yakuScoreBonus !== 12 || tanyaoWithAugment.augmentBonuses.length !== 1) {
+  throw new Error("특정 역 증강이 해당 역 점수에 반영되지 않았습니다.");
+}
+
+const noTanyaoWithAugment = scoreHand(
+  parseHand("123m 234p 345s 678m 66p"),
+  { suit: "m", value: 1, copyId: "test-dora" },
+  [],
+  { augments: [tanyaoAugment] },
+);
+if (noTanyaoWithAugment.augmentBonuses.length !== 0 || noTanyaoWithAugment.yakuScoreBonus !== 0) {
+  throw new Error("특정 역 증강이 대상 역이 없는 손패에도 반영되었습니다.");
+}
+
+const tileAugment = augmentPool.find((augment) => augment.id === "five-manzu-tuning");
+const tileAugmentScore = scoreHand(
+  parseHand("555m 123p 456p 789s ESz"),
+  { suit: "m", value: 1, copyId: "test-dora" },
+  [],
+  { augments: [tileAugment] },
+);
+if (tileAugmentScore.tileScoreBonus !== 12 || tileAugmentScore.augmentBonuses.length !== 1) {
+  throw new Error("특정 패 증강이 패 점수에 반영되지 않았습니다.");
 }
 
 if (run.doraState.indicators.length !== 5 || run.doraState.uraIndicators.length !== 5 || run.deadWall.rinshanTiles.length !== 4) {

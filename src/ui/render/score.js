@@ -5,6 +5,9 @@ export function renderScore(score) {
   const relics = score.relicBonuses.length
     ? score.relicBonuses.map(renderRelicBonus).join("")
     : `<li><span>발동 유물 없음</span><strong>0점</strong></li>`;
+  const augments = score.augmentBonuses.length
+    ? score.augmentBonuses.map(renderAugmentBonus).join("")
+    : "";
 
   return `
     <ul class="score-list">
@@ -14,6 +17,7 @@ export function renderScore(score) {
       ${yaku}
       <li><span>도라</span><strong>${score.doraScore}점 (${score.regularDoraCount ?? score.doraCount}장${score.uraDoraCount ? `, 뒷도라 ${score.uraDoraCount}장` : ""})</strong></li>
       ${relics}
+      ${augments}
       ${score.riichiMultiplierBonus ? `<li><span>리치 보너스</span><strong>x+${formatMultiplier(score.riichiMultiplierBonus)}</strong></li>` : ""}
       <li><span>역 배수</span><strong>x${formatMultiplier(score.yakuMultiplier)}</strong></li>
       <li><span>역 완성 배수</span><strong>x${formatMultiplier(score.yakuCompletionMultiplier)}</strong></li>
@@ -24,7 +28,14 @@ export function renderScore(score) {
 }
 
 export function renderRelicBonus(item) {
-  const bonus = item.bonus;
+  return renderNamedBonus(item.relic.name, item.bonus);
+}
+
+export function renderAugmentBonus(item) {
+  return renderNamedBonus(item.augment.name, item.bonus);
+}
+
+function renderNamedBonus(name, bonus) {
   const parts = [
     bonus.tileScoreBonus ? `패 +${bonus.tileScoreBonus}` : "",
     bonus.yakuScoreBonus ? `역 +${bonus.yakuScoreBonus}` : "",
@@ -32,7 +43,7 @@ export function renderRelicBonus(item) {
     bonus.yakuMultiplierBonus ? `역 x+${formatMultiplier(bonus.yakuMultiplierBonus)}` : "",
     bonus.globalMultiplierBonus ? `전체 x+${formatMultiplier(bonus.globalMultiplierBonus)}` : "",
   ].filter(Boolean);
-  return `<li><span>${item.relic.name}</span><strong>${parts.join(", ")}</strong></li>`;
+  return `<li><span>${name}</span><strong>${parts.join(", ")}</strong></li>`;
 }
 
 export function renderRelic(relic) {
@@ -43,6 +54,18 @@ export function renderRelic(relic) {
         <small>${formatRarity(relic.rarity)}</small>
       </div>
       <span>${relic.text}</span>
+    </div>
+  `;
+}
+
+export function renderAugment(augment) {
+  return `
+    <div class="relic augment relic-${augment.rarity ?? "common"}">
+      <div class="relic-title">
+        <strong>${augment.name}</strong>
+        <small>${formatRarity(augment.rarity)}</small>
+      </div>
+      <span>${augment.text}</span>
     </div>
   `;
 }

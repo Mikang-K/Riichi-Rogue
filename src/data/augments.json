@@ -1,0 +1,82 @@
+[
+  {
+    "id": "tanyao-focus",
+    "name": "탕야오 단련",
+    "rarity": "common",
+    "target": { "type": "yaku", "id": "tanyao" },
+    "effect": { "type": "targetYakuScoreBonus", "score": 12 },
+    "text": "탕야오가 붙으면 역 점수 +12점"
+  },
+  {
+    "id": "pinfu-tempo",
+    "name": "핑후 박자",
+    "rarity": "common",
+    "target": { "type": "yaku", "id": "pinfu" },
+    "effect": { "type": "targetYakuMultiplierBonus", "multiplier": 0.25 },
+    "text": "핑후가 붙으면 역 배수 +0.25"
+  },
+  {
+    "id": "seven-pair-secret",
+    "name": "칠대자 비전",
+    "rarity": "rare",
+    "target": { "type": "yaku", "id": "chiitoitsu" },
+    "effect": { "type": "targetYakuScoreBonus", "score": 22 },
+    "text": "칠대자가 붙으면 역 점수 +22점"
+  },
+  {
+    "id": "flush-crown",
+    "name": "청일색 왕관",
+    "rarity": "legendary",
+    "target": { "type": "yaku", "id": "chinitsu" },
+    "effect": { "type": "targetYakuGlobalMultiplierBonus", "multiplier": 0.6 },
+    "text": "청일색이 붙으면 전체 배수 +0.6"
+  },
+  {
+    "id": "five-manzu-tuning",
+    "name": "5만 조율",
+    "rarity": "common",
+    "target": { "type": "tileFace", "suit": "m", "value": 5 },
+    "effect": { "type": "targetTileScoreBonus", "scorePerTile": 4 },
+    "text": "5만 1장마다 패 점수 +4점"
+  },
+  {
+    "id": "white-dragon-polish",
+    "name": "백패 연마",
+    "rarity": "common",
+    "target": { "type": "tileFace", "suit": "z", "value": "P" },
+    "effect": { "type": "targetTileScoreBonus", "scorePerTile": 5 },
+    "text": "백 1장마다 패 점수 +5점"
+  },
+  {
+    "id": "east-anchor",
+    "name": "동풍 닻",
+    "rarity": "rare",
+    "target": { "type": "tileFace", "suit": "z", "value": "E" },
+    "effect": { "type": "targetTileThresholdMultiplierBonus", "threshold": 2, "multiplier": 0.25 },
+    "text": "동이 2장 이상이면 패 배수 +0.25"
+  },
+  {
+    "id": "honor-growth",
+    "name": "자패 성장",
+    "rarity": "common",
+    "target": { "type": "tileGroup", "group": "honor" },
+    "effect": { "type": "tileGroupScoreBonus", "scorePerTile": 3 },
+    "text": "자패 1장마다 패 점수 +3점"
+  },
+  {
+    "id": "terminal-edge",
+    "name": "노두패 칼날",
+    "rarity": "common",
+    "target": { "type": "tileGroup", "group": "terminal" },
+    "effect": { "type": "tileGroupScoreBonus", "scorePerTile": 3 },
+    "text": "1, 9 수패 1장마다 패 점수 +3점"
+  },
+  {
+    "id": "simple-acceleration",
+    "name": "중장패 가속",
+    "rarity": "rare",
+    "target": { "type": "tileGroup", "group": "simple" },
+    "effect": { "type": "tileGroupThresholdMultiplierBonus", "threshold": 10, "multiplier": 0.35 },
+    "text": "2~8 수패가 10장 이상이면 패 배수 +0.35"
+  }
+]

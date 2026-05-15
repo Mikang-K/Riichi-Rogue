@@ -11,7 +11,7 @@ import {
   getScoringTiles,
 } from "../../game.js";
 import { tileButton } from "./tile.js";
-import { renderScore, renderRelic } from "./score.js";
+import { renderAugment, renderScore, renderRelic } from "./score.js";
 import { renderTutorialGuide } from "./tutorial.js";
 import { renderYakuHelp, renderTermsHelp, renderReward, renderEnd, renderTutorialComplete } from "./modal.js";
 import { renderTileFace } from "../../tileArt.js";
@@ -33,11 +33,13 @@ export function renderGameView(state, uiState) {
         rinshan: state.kan?.rinshanReady === true,
         kanCount: state.kan?.declaredCount ?? 0,
         kanSets: state.kan?.sets ?? [],
+        augments: state.augments ?? [],
       }
       : {
         rinshan: state.kan?.rinshanReady === true,
         kanCount: state.kan?.declaredCount ?? 0,
         kanSets: state.kan?.sets ?? [],
+        augments: state.augments ?? [],
       },
   );
 
@@ -207,7 +209,11 @@ function renderInfoGrid(state, score) {
       </article>
       <article class="panel">
         <h2>유물</h2>
-        <div class="relics">${state.relics.map(renderRelic).join("")}</div>
+        <div class="relics">${state.relics.length ? state.relics.map(renderRelic).join("") : `<p class="empty-note">-</p>`}</div>
+      </article>
+      <article class="panel">
+        <h2>증강</h2>
+        <div class="relics">${(state.augments ?? []).length ? state.augments.map(renderAugment).join("") : `<p class="empty-note">-</p>`}</div>
       </article>
     </section>
   `;

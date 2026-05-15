@@ -1,10 +1,11 @@
 ﻿import { analyzeHand } from "./game/hand-analysis.js";
+import { augmentPool, augmentRarities } from "./game/augments.js";
 import { formatWaits, getRiichiState, isRiichiWinningHand } from "./game/riichi.js";
 import { relicPool, relicRarities } from "./game/relics.js";
 import { evaluateYaku } from "./game/yaku-evaluator.js";
 import { HONORS, SUITS, countTiles, sameFace, sortTiles } from "./game/tile-utils.js";
 
-export { relicPool, relicRarities };
+export { augmentPool, augmentRarities, relicPool, relicRarities };
 
 const HONOR_LABELS = { E: "동", S: "남", W: "서", N: "북", P: "백", F: "발", C: "중" };
 const SUIT_LABELS = { m: "만", p: "통", s: "삭" };
@@ -55,9 +56,10 @@ export function newRun() {
     discardsLeft: BASE_MAX_DISCARDS,
     riichi: emptyRiichiState(),
     relics: [],
+    augments: [],
     coins: 0,
     status: "startReward",
-    rewardOptions: getRewardOptions([]),
+    rewardOptions: getStartRewardOptions(),
     message: "시작 유물을 하나 고르세요.",
   };
 }
@@ -82,6 +84,7 @@ export function newTitle() {
     discardsLeft: 0,
     riichi: emptyRiichiState(),
     relics: [],
+    augments: [],
     coins: 0,
     status: "title",
     message: "튜토리얼로 감을 익히거나 바로 본 게임을 시작하세요.",
@@ -132,6 +135,7 @@ export function newTutorial() {
     discardsLeft: TUTORIAL_MAX_DISCARDS,
     riichi: emptyRiichiState(),
     relics: [relicPool[0]],
+    augments: [],
     coins: 0,
     status: "tutorial",
     message: "연습 목표: 동을 선택해 교환하면 6통이 들어와 완료할 수 있습니다.",
@@ -399,14 +403,24 @@ function finishScoredHand(state, result, successMessage = null) {
     status: "reward",
     coins: state.coins + scoreToCoins(result.totalScore),
     selected: [],
-    rewardOptions: getRewardOptions(state.relics),
-    message: successMessage ?? `${result.totalScore}점으로 통과했습니다. 유물을 하나 고르세요.`,
+    rewardOptions: getRewardOptions(state),
+    message: successMessage ?? `${result.totalScore}점으로 통과했습니다. 보상을 하나 고르세요.`,
   };
 }
 
 export function chooseRelic(state, relicId) {
-  const relic = relicPool.find((item) => item.id === relicId);
-  if (!["reward", "startReward"].includes(state.status) || !relic) return state;
+  return chooseReward(state, relicId);
+}
+
+export function chooseReward(state, rewardId) {
+  const reward = findReward(state, rewardId);
+  if (!["reward", "startReward"].includes(state.status) || !reward) return state;
+
+  if (reward.type === "augment") return chooseAugmentReward(state, reward.item);
+  return chooseRelicReward(state, reward.item);
+}
+
+function chooseRelicReward(state, relic) {
   const playerState = applyRelicPlayerEffect(state, relic);
 
   if (state.status === "startReward") {
@@ -427,6 +441,17 @@ export function chooseRelic(state, relicId) {
   });
 }
 
+function chooseAugmentReward(state, augment) {
+  if (state.status === "startReward") return state;
+
+  return startRound({
+    ...state,
+    augments: [...(state.augments ?? []), augment],
+    roundIndex: state.roundIndex + 1,
+    rewardOptions: [],
+  });
+}
+
 export function scoreHand(tiles, dora, relics = [], context = {}) {
   const counts = countTiles(tiles);
   const analysis = analyzeHand(tiles);
@@ -438,13 +463,18 @@ export function scoreHand(tiles, dora, relics = [], context = {}) {
   const doraScore = analysis.isComplete ? doraCount * DORA_SCORE : 0;
   const totalHan = yaku.reduce((sum, item) => sum + item.han, 0) + (analysis.isComplete ? doraCount : 0);
   const yakuCompletionMultiplier = getYakuCompletionMultiplier(yaku, totalHan);
+  const scoreContext = { tiles, analysis, yaku, counts, doraCount, doraHan: doraCount };
   const relicBonuses = relics
-    .map((relic) => ({ relic, bonus: getRelicScoreBonus(relic, { tiles, analysis, yaku, counts, doraCount, doraHan: doraCount }) }))
+    .map((relic) => ({ relic, bonus: getRelicScoreBonus(relic, scoreContext) }))
+    .filter((item) => hasScoreBonus(item.bonus));
+  const augmentBonuses = (context.augments ?? [])
+    .map((augment) => ({ augment, bonus: getAugmentScoreBonus(augment, scoreContext) }))
     .filter((item) => hasScoreBonus(item.bonus));
   const riichiMultiplierBonus = getRiichiMultiplierBonus(context);
-  const bonusTotals = addScoreBonuses(relicBonuses.reduce(addScoreBonuses, emptyScoreBonus()), {
-    yakuMultiplierBonus: riichiMultiplierBonus,
-  });
+  const bonusTotals = addScoreBonuses(
+    [...relicBonuses, ...augmentBonuses].reduce(addScoreBonuses, emptyScoreBonus()),
+    { yakuMultiplierBonus: riichiMultiplierBonus },
+  );
   const tileMultiplier = DEFAULT_MULTIPLIER + bonusTotals.tileMultiplierBonus;
   const yakuMultiplier = DEFAULT_MULTIPLIER + bonusTotals.yakuMultiplierBonus;
   const globalMultiplier = yakuCompletionMultiplier + bonusTotals.globalMultiplierBonus;
@@ -464,6 +494,7 @@ export function scoreHand(tiles, dora, relics = [], context = {}) {
     uraDoraCount: doraBreakdown.uraCount,
     doraScore,
     relicBonuses,
+    augmentBonuses,
     relicHan: relicBonuses.map(({ relic, bonus }) => ({ relic, han: Math.floor(bonus.yakuScoreBonus / LEGACY_HAN_SCORE) })).filter((item) => item.han > 0),
     tileScore,
     tileScoreBonus: bonusTotals.tileScoreBonus,
@@ -531,6 +562,11 @@ function getRelicScoreBonus(relic, context) {
   return normalizeScoreBonus({ yakuScoreBonus: relic.score(context) * LEGACY_HAN_SCORE });
 }
 
+function getAugmentScoreBonus(augment, context) {
+  if (!augment.effect) return emptyScoreBonus();
+  return normalizeScoreBonus(augment.effect(context));
+}
+
 function normalizeScoreBonus(bonus) {
   return { ...emptyScoreBonus(), ...bonus };
 }
@@ -549,6 +585,7 @@ function getRiichiMultiplierBonus(context) {
 
 function getScoreContext(state) {
   const context = {
+    augments: state.augments ?? [],
     rinshan: state.kan?.rinshanReady === true,
     kanCount: state.kan?.declaredCount ?? 0,
     kanSets: state.kan?.sets ?? [],
@@ -709,34 +746,72 @@ function shuffle(items) {
   return [...items].sort(() => Math.random() - 0.5);
 }
 
-function getRewardOptions(currentRelics) {
-  const owned = new Set(currentRelics.map((relic) => relic.id));
-  return drawWeightedRelics(relicPool.filter((relic) => !owned.has(relic.id)), 3);
+function getStartRewardOptions() {
+  return getRelicRewardOptions([], 3);
 }
 
-function drawWeightedRelics(candidates, count) {
+function getRewardOptions(state) {
+  return [
+    ...getRelicRewardOptions(state.relics ?? [], 1),
+    ...getAugmentRewardOptions(state.augments ?? [], 2),
+  ];
+}
+
+function getRelicRewardOptions(currentRelics, count) {
+  const owned = new Set(currentRelics.map((relic) => relic.id));
+  return drawWeightedItems(relicPool.filter((relic) => !owned.has(relic.id)), count).map((item) =>
+    createRewardOption("relic", item),
+  );
+}
+
+function getAugmentRewardOptions(currentAugments, count) {
+  const owned = new Set(currentAugments.map((augment) => augment.id));
+  return drawWeightedItems(augmentPool.filter((augment) => !owned.has(augment.id)), count).map((item) =>
+    createRewardOption("augment", item),
+  );
+}
+
+function createRewardOption(type, item) {
+  return {
+    ...item,
+    type,
+    item,
+  };
+}
+
+function findReward(state, rewardId) {
+  const option = (state.rewardOptions ?? []).find((item) => item.id === rewardId);
+  if (option?.item) return option;
+  const relic = relicPool.find((item) => item.id === rewardId);
+  if (relic) return createRewardOption("relic", relic);
+  const augment = augmentPool.find((item) => item.id === rewardId);
+  if (augment) return createRewardOption("augment", augment);
+  return null;
+}
+
+function drawWeightedItems(candidates, count) {
   const options = [];
   const pool = [...candidates];
   while (options.length < count && pool.length > 0) {
-    const selected = takeWeightedRelic(pool);
+    const selected = takeWeightedItem(pool);
     options.push(selected);
     pool.splice(pool.indexOf(selected), 1);
   }
   return options;
 }
 
-function takeWeightedRelic(candidates) {
-  const totalWeight = candidates.reduce((sum, relic) => sum + getRelicWeight(relic), 0);
+function takeWeightedItem(candidates) {
+  const totalWeight = candidates.reduce((sum, item) => sum + getRewardWeight(item), 0);
   let roll = Math.random() * totalWeight;
-  for (const relic of candidates) {
-    roll -= getRelicWeight(relic);
-    if (roll <= 0) return relic;
+  for (const item of candidates) {
+    roll -= getRewardWeight(item);
+    if (roll <= 0) return item;
   }
   return candidates.at(-1);
 }
 
-function getRelicWeight(relic) {
-  return relicRarities[relic.rarity]?.weight ?? relicRarities.common.weight;
+function getRewardWeight(item) {
+  return relicRarities[item.rarity]?.weight ?? relicRarities.common.weight;
 }
 
 
