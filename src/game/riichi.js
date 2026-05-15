@@ -7,20 +7,24 @@ const WAIT_FACES = [
 ];
 
 export function getRiichiState(hand, availableTiles = null) {
-  const availableCounts = availableTiles ? countTiles(availableTiles) : null;
-  const candidates = hand
-    .map((tile) => getRiichiCandidate(hand, tile, availableCounts))
-    .filter((candidate) => candidate.waits.length > 0)
-    .sort(compareRiichiCandidates);
-
+  const candidates = findRiichiCandidates(hand, availableTiles);
   const best = candidates[0];
-  if (!best) return { canRiichi: false, exchangeTileId: null, waits: [] };
+  if (!best) return { canRiichi: false, exchangeTileId: null, waits: [], candidates: [] };
 
   return {
     canRiichi: true,
     exchangeTileId: best.exchangeTileId,
     waits: best.waits,
+    candidates,
   };
+}
+
+export function findRiichiCandidates(hand, availableTiles = null) {
+  const availableCounts = availableTiles ? countTiles(availableTiles) : null;
+  return hand
+    .map((tile) => getRiichiCandidate(hand, tile, availableCounts))
+    .filter((candidate) => candidate.waits.length > 0)
+    .sort(compareRiichiCandidates);
 }
 
 export function isRiichiWinningHand(hand) {
@@ -37,9 +41,12 @@ function getRiichiCandidate(hand, exchangeTile, availableCounts) {
   const waits = WAIT_FACES
     .filter((face) => !availableCounts || (availableCounts.get(keyOf(face)) ?? 0) > 0)
     .filter((face) => isRiichiWinningHand(sortTiles([...keep, makePreviewTile(face)])));
+  const uniqueWaits = dedupeFaces(waits);
   return {
     exchangeTileId: exchangeTile.copyId,
-    waits: dedupeFaces(waits),
+    exchangeTile,
+    waits: uniqueWaits,
+    waitCount: uniqueWaits.length,
   };
 }
 

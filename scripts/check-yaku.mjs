@@ -9,6 +9,7 @@ import {
   getAvailableRiichi,
   getAvailableKans,
   declareRiichi,
+  confirmRiichiDiscard,
   declareKan,
   advanceRiichi,
   submitHand,
@@ -235,7 +236,36 @@ if (submittedRiichi.status !== "reward" && submittedRiichi.status !== "won") {
   throw new Error("리치 성공 후 조합 제출로 다음 흐름에 진입하지 못했습니다.");
 }
 
-console.log(`Yaku checks passed: ${cases.length + 25}`);
+const multiRiichiState = {
+  ...riichiOnlyState,
+  deck: buildTestDeck(),
+  hand: parseHand("123m 456p 789s 555m 22p"),
+  discardsLeft: 3,
+  maxDiscards: 3,
+  riichi: { active: false, phase: "idle", exchangeTileId: null, waits: [], candidates: [], attemptsUsed: 0 },
+};
+const multiRiichi = getAvailableRiichi(multiRiichiState);
+if ((multiRiichi.candidates?.length ?? 0) < 2) {
+  throw new Error("리치 가능한 버림패 후보가 여러 개인 상태를 찾지 못했습니다.");
+}
+
+const selectingRiichi = declareRiichi(multiRiichiState);
+if (selectingRiichi.riichi.phase !== "selectingDiscard" || selectingRiichi.riichi.candidates.length !== multiRiichi.candidates.length) {
+  throw new Error("리치 후보가 여러 개일 때 버림패 선택 상태로 진입하지 않았습니다.");
+}
+
+const invalidRiichi = confirmRiichiDiscard(selectingRiichi, "not-a-candidate");
+if (invalidRiichi.riichi.phase !== "selectingDiscard") {
+  throw new Error("리치 후보가 아닌 패를 선택했는데 선언이 확정되었습니다.");
+}
+
+const selectedCandidate = selectingRiichi.riichi.candidates[1];
+const confirmedRiichi = confirmRiichiDiscard(selectingRiichi, selectedCandidate.exchangeTileId);
+if (confirmedRiichi.riichi.phase !== "declared" || confirmedRiichi.riichi.exchangeTileId !== selectedCandidate.exchangeTileId) {
+  throw new Error("유저가 선택한 리치 버림패로 선언이 확정되지 않았습니다.");
+}
+
+console.log(`Yaku checks passed: ${cases.length + 29}`);
 
 function namesFor(handText) {
   return scoreHand(parseHand(handText), { suit: "m", value: 1, copyId: "test-dora" }).yaku.map((item) => item.name);
@@ -267,4 +297,14 @@ function parseHand(text) {
       copyId: `test-${index++}`,
     }));
   });
+}
+
+function buildTestDeck() {
+  let index = 0;
+  const suits = ["m", "p", "s"];
+  const honors = ["E", "S", "W", "N", "P", "F", "C"];
+  return [
+    ...suits.flatMap((suit) => Array.from({ length: 9 }, (_, value) => ({ suit, value: value + 1 }))),
+    ...honors.map((value) => ({ suit: "z", value })),
+  ].flatMap((face) => Array.from({ length: 4 }, () => ({ ...face, copyId: `deck-${index++}` })));
 }

@@ -188,19 +188,56 @@ export function declareRiichi(state) {
     return { ...state, selected: [], message: "아직 리치를 선언할 수 없습니다. 한 장 교체로 완료 가능한 형태가 필요합니다." };
   }
 
+  if (riichiState.candidates.length === 1) {
+    return confirmRiichiDiscard({
+      ...state,
+      riichi: {
+        ...emptyRiichiState(),
+        active: true,
+        phase: "selectingDiscard",
+        candidates: riichiState.candidates,
+      },
+    }, riichiState.candidates[0].exchangeTileId);
+  }
+
   return {
     ...state,
     selected: [],
     riichi: {
       active: true,
-      phase: "declared",
-      exchangeTileId: riichiState.exchangeTileId,
-      waits: riichiState.waits,
+      phase: "selectingDiscard",
+      exchangeTileId: null,
+      waits: [],
+      candidates: riichiState.candidates,
       attemptsUsed: 0,
       lastDiscardedTile: null,
       lastDrawnTile: null,
     },
-    message: `리치 선언. 대기패: ${formatWaits(riichiState.waits, tileName)}`,
+    message: "리치할 버림패를 선택하세요.",
+  };
+}
+
+export function confirmRiichiDiscard(state, tileId) {
+  if (state.status !== "playing" || state.riichi?.phase !== "selectingDiscard") return state;
+  const candidate = state.riichi.candidates.find((item) => item.exchangeTileId === tileId);
+  if (!candidate) {
+    return { ...state, selected: [], message: "리치 가능한 버림패를 선택하세요." };
+  }
+
+  return {
+    ...state,
+    selected: [],
+    riichi: {
+      ...state.riichi,
+      active: true,
+      phase: "declared",
+      exchangeTileId: candidate.exchangeTileId,
+      waits: candidate.waits,
+      attemptsUsed: 0,
+      lastDiscardedTile: null,
+      lastDrawnTile: null,
+    },
+    message: `리치 선언. 대기패: ${formatWaits(candidate.waits, tileName)}`,
   };
 }
 
@@ -532,6 +569,7 @@ function emptyRiichiState() {
     phase: "idle",
     exchangeTileId: null,
     waits: [],
+    candidates: [],
     attemptsUsed: 0,
     lastDiscardedTile: null,
     lastDrawnTile: null,
@@ -658,7 +696,7 @@ export function canAct(state) {
 
 export function getAvailableRiichi(state) {
   if (state.status !== "playing" || state.riichi?.active || state.discardsLeft <= 0) {
-    return { canRiichi: false, exchangeTileId: null, waits: [] };
+    return { canRiichi: false, exchangeTileId: null, waits: [], candidates: [] };
   }
   return getRiichiState(state.hand, state.deck);
 }

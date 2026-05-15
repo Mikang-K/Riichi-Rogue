@@ -412,6 +412,22 @@ h2 {
   outline-offset: 2px;
 }
 
+.tile.riichi-candidate {
+  box-shadow: 0 12px 0 rgba(243, 193, 97, 0.28);
+  outline: 2px solid #f3c161;
+  outline-offset: 2px;
+}
+
+.tile.riichi-candidate:hover,
+.tile.riichi-candidate:focus-visible {
+  transform: translateY(-8px);
+}
+
+.tile.riichi-non-candidate {
+  opacity: 0.42;
+  filter: grayscale(0.35);
+}
+
 .tile.riichi-drawn {
   animation: riichiDraw 420ms ease-out;
   box-shadow: 0 12px 0 rgba(119, 178, 139, 0.26);
@@ -455,6 +471,29 @@ h2 {
 .riichi-trace small {
   color: #d7ded0;
   font-size: 0.82rem;
+}
+
+.riichi-candidates {
+  display: flex;
+  flex-basis: 100%;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.riichi-candidates span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border: 1px solid rgba(243, 193, 97, 0.28);
+  border-radius: 8px;
+  background: rgba(20, 24, 20, 0.34);
+}
+
+.riichi-candidates .tile-face {
+  width: calc(var(--mahjong-tile-width) * 0.44);
+  height: calc(var(--mahjong-tile-size) * 0.44);
 }
 
 @keyframes riichiPulse {

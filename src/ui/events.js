@@ -2,6 +2,7 @@ import {
   toggleTile,
   exchangeSelected,
   declareRiichi,
+  confirmRiichiDiscard,
   declareKan,
   advanceRiichi,
   submitHand,
@@ -43,7 +44,14 @@ export function initEvents({ getState, setState, getUiState, setUiState, rerende
     }
 
     if (tileId) {
-      setState(toggleTile(getState(), tileId));
+      const state = getState();
+      if (state.riichi?.phase === "selectingDiscard") {
+        setState(confirmRiichiDiscard(state, tileId));
+        rerender();
+        if (getState().riichi?.phase === "declared") scheduleRiichiAdvance();
+        return;
+      }
+      setState(toggleTile(state, tileId));
       rerender();
       return;
     }

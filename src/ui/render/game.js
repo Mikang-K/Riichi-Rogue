@@ -100,6 +100,7 @@ function renderTable(state) {
   const riichiState = getAvailableRiichi(state);
   const kanOptions = getAvailableKans(state);
   const kanCandidateKeys = new Set(kanOptions.map((kan) => kan.key));
+  const riichiCandidates = state.riichi?.phase === "selectingDiscard" ? state.riichi.candidates : [];
   const exchangeDisabled = state.selected.length === 0 || state.discardsLeft === 0 || !canAct(state) || state.riichi?.active;
   const riichiDisabled = !riichiState.canRiichi;
   const submitDisabled = (state.status !== "playing" && state.status !== "tutorial")
@@ -113,7 +114,7 @@ function renderTable(state) {
         ${renderKanSets(state)}
         <div class="play-area">
           <div class="hand" aria-label="손패">
-            ${state.hand.map((tile) => tileButton(tile, state.selected, state.riichi, state.kan, kanCandidateKeys)).join("")}
+            ${state.hand.map((tile) => tileButton(tile, state.selected, state.riichi, state.kan, kanCandidateKeys, riichiCandidates)).join("")}
           </div>
           ${renderRiichiTrace(state)}
         </div>
@@ -162,12 +163,27 @@ function renderRiichiTrace(state) {
   const discarded = state.riichi.lastDiscardedTile;
   const drawn = state.riichi.lastDrawnTile;
   const waits = state.riichi.waits.length ? state.riichi.waits.map(tileName).join(", ") : "";
+  const candidates = state.riichi.phase === "selectingDiscard" ? state.riichi.candidates : [];
   return `
     <div class="riichi-trace" aria-live="polite">
       <span>리치 ${formatRiichiPhase(state.riichi.phase)}</span>
       ${discarded ? `<span class="riichi-trace-tile">버림 ${renderTileFace(discarded)}</span>` : ""}
       ${drawn ? `<span class="riichi-trace-tile">신규 ${renderTileFace(drawn)}</span>` : ""}
       ${waits ? `<small>대기 ${waits}</small>` : ""}
+      ${candidates.length ? renderRiichiCandidates(candidates) : ""}
+    </div>
+  `;
+}
+
+function renderRiichiCandidates(candidates) {
+  return `
+    <div class="riichi-candidates">
+      ${candidates.map((candidate) => `
+        <span>
+          ${renderTileFace(candidate.exchangeTile)}
+          <small>${candidate.waits.map(tileName).join(", ")} 대기</small>
+        </span>
+      `).join("")}
     </div>
   `;
 }
@@ -175,6 +191,7 @@ function renderRiichiTrace(state) {
 function formatRiichiPhase(phase) {
   return {
     declared: "선언",
+    selectingDiscard: "버림패 선택",
     drawing: "진행",
     ready: "성공",
     failed: "실패",
