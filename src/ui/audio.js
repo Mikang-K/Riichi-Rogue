@@ -5,6 +5,7 @@ backgroundMusic.loop = true;
 backgroundMusic.volume = 0.45;
 
 let isStarted = false;
+let audioContext = null;
 
 export function startBackgroundMusic({ muted } = {}) {
   if (muted) return;
@@ -33,4 +34,59 @@ export function toggleBackgroundMusic({ muted }) {
 
 export function hasStartedBackgroundMusic() {
   return isStarted && !backgroundMusic.paused;
+}
+
+export function playSfx(name, { muted } = {}) {
+  if (muted) return;
+  const context = getAudioContext();
+  if (!context) return;
+
+  if (context.state === "suspended") {
+    context.resume().catch(() => {});
+  }
+
+  const now = context.currentTime;
+  switch (name) {
+    case "exchange":
+      playTone(context, { start: now, frequency: 420, endFrequency: 620, duration: 0.09, type: "triangle", volume: 0.12 });
+      playTone(context, { start: now + 0.055, frequency: 760, duration: 0.07, type: "sine", volume: 0.08 });
+      break;
+    case "submit-success":
+      playTone(context, { start: now, frequency: 523.25, duration: 0.08, type: "sine", volume: 0.1 });
+      playTone(context, { start: now + 0.08, frequency: 659.25, duration: 0.09, type: "sine", volume: 0.1 });
+      playTone(context, { start: now + 0.17, frequency: 783.99, duration: 0.16, type: "triangle", volume: 0.11 });
+      break;
+    case "submit-fail":
+      playTone(context, { start: now, frequency: 220, endFrequency: 165, duration: 0.18, type: "sawtooth", volume: 0.09 });
+      break;
+    default:
+      break;
+  }
+}
+
+function getAudioContext() {
+  if (audioContext) return audioContext;
+  const AudioContextClass = window.AudioContext ?? window.webkitAudioContext;
+  if (!AudioContextClass) return null;
+  audioContext = new AudioContextClass();
+  return audioContext;
+}
+
+function playTone(context, { start, frequency, endFrequency = frequency, duration, type, volume }) {
+  const oscillator = context.createOscillator();
+  const gain = context.createGain();
+  const end = start + duration;
+
+  oscillator.type = type;
+  oscillator.frequency.setValueAtTime(frequency, start);
+  oscillator.frequency.exponentialRampToValueAtTime(Math.max(1, endFrequency), end);
+
+  gain.gain.setValueAtTime(0.0001, start);
+  gain.gain.exponentialRampToValueAtTime(volume, start + 0.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001, end);
+
+  oscillator.connect(gain);
+  gain.connect(context.destination);
+  oscillator.start(start);
+  oscillator.stop(end + 0.02);
 }

@@ -9,7 +9,7 @@ import {
   newTutorial,
   chooseRelic,
 } from "../game.js";
-import { startBackgroundMusic, toggleBackgroundMusic } from "./audio.js";
+import { playSfx, startBackgroundMusic, toggleBackgroundMusic } from "./audio.js";
 
 export function initEvents({ getState, setState, getUiState, setUiState, rerender }) {
   let riichiTimer = null;
@@ -56,7 +56,12 @@ export function initEvents({ getState, setState, getUiState, setUiState, rerende
 
     switch (action) {
       case "exchange":
-        setState(exchangeSelected(getState()));
+        {
+          const before = getState();
+          const after = exchangeSelected(before);
+          setState(after);
+          if (after.discardsLeft < before.discardsLeft) playSfx("exchange", { muted: uiState.isMusicMuted });
+        }
         rerender();
         break;
       case "declare-riichi":
@@ -70,7 +75,17 @@ export function initEvents({ getState, setState, getUiState, setUiState, rerende
         break;
       case "submit":
         clearRiichiTimer();
-        setState(submitHand(getState()));
+        {
+          const before = getState();
+          const after = submitHand(before);
+          setState(after);
+          const didSubmit = after !== before;
+          if (didSubmit && ["reward", "won", "tutorialComplete"].includes(after.status)) {
+            playSfx("submit-success", { muted: uiState.isMusicMuted });
+          } else if (didSubmit) {
+            playSfx("submit-fail", { muted: uiState.isMusicMuted });
+          }
+        }
         rerender();
         break;
       case "restart":
