@@ -1,11 +1,13 @@
 import { tileName } from "../../game.js";
 import { renderTileFace } from "../../tileArt.js";
 import { formatRarity } from "./score.js";
+import { getTutorialTarget } from "./tutorial.js";
 
 export function renderShop(state) {
   const shop = state.shop;
   if (!shop) return "";
   const isTutorial = state.mode === "tutorial";
+  const tutorialTarget = isTutorial ? getTutorialTarget(state) : null;
 
   return `
     <section class="overlay">
@@ -39,7 +41,7 @@ export function renderShop(state) {
         </div>
         <p class="message">${state.message}</p>
         <div class="shop-actions">
-          <button data-action="leave-shop" ${isTutorial && !state.tutorial?.hasEditedTile ? "disabled" : ""}>${isTutorial ? "튜토리얼 완료" : "다음 라운드"}</button>
+          <button data-action="leave-shop" data-tutorial-target="leave-shop" class="${tutorialTarget === "leave-shop" ? "tutorial-target-active" : ""}" ${isTutorial && !state.tutorial?.hasEditedTile ? "disabled" : ""}>${isTutorial ? "튜토리얼 완료" : "다음 라운드"}</button>
         </div>
       </div>
     </section>
@@ -95,13 +97,17 @@ function renderTileChoiceGroup(state, label, offers, editType) {
 function renderTileChoiceOffers(state, offers, label, editType) {
   const used = state.shop.editsUsed[editType] ?? 0;
   const limit = state.shop.editsLimit[editType] ?? 0;
+  const tutorialTarget = state.mode === "tutorial" ? getTutorialTarget(state) : null;
+  const tileTutorialTarget = editType === "upgradeTile" ? "upgrade-offer" : "";
+  const isActiveTarget = tutorialTarget === tileTutorialTarget;
   return offers.map((offer) => {
     const bonus = offer.tile.enhancement?.tileScoreBonus ?? 0;
     return `
       <button
-        class="shop-offer shop-tile-offer"
+        class="shop-offer shop-tile-offer ${isActiveTarget ? "tutorial-target-active" : ""}"
         data-action="buy-shop-offer"
         data-shop-offer-id="${offer.id}"
+        ${tileTutorialTarget ? `data-tutorial-target="${tileTutorialTarget}"` : ""}
         ${offer.sold || used >= limit || state.coins < offer.price ? "disabled" : ""}
       >
         <small>${label} - ${offer.price}코인</small>

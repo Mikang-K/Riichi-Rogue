@@ -12,7 +12,7 @@ import {
 } from "../../game.js";
 import { tileButton } from "./tile.js";
 import { renderAugment, renderScore, renderRelic } from "./score.js";
-import { renderTutorialGuide } from "./tutorial.js";
+import { getTutorialTarget, renderTutorialCoach } from "./tutorial.js";
 import { renderYakuHelp, renderTermsHelp, renderReward, renderEnd, renderTutorialComplete } from "./modal.js";
 import { renderTileFace } from "../../tileArt.js";
 import { renderMusicControl } from "./audio.js";
@@ -47,10 +47,10 @@ export function renderGameView(state, uiState) {
     <section class="shell">
       ${renderTopbar(round, score, isTutorial)}
       ${renderStatusGrid(state, round)}
-      ${isTutorial ? renderTutorialGuide(state, score) : ""}
-      ${renderTable(state)}
+      ${renderTable(state, score)}
       ${renderInfoGrid(state, score)}
       ${renderOverlays(state, score, uiState)}
+      ${isTutorial ? renderTutorialCoach(state, score) : ""}
       ${renderMusicControl(uiState.isMusicMuted)}
     </section>
   `;
@@ -98,7 +98,7 @@ function renderStatusGrid(state, round) {
   `;
 }
 
-function renderTable(state) {
+function renderTable(state, score) {
   const riichiState = getAvailableRiichi(state);
   const isTutorial = state.mode === "tutorial";
   const kanOptions = isTutorial ? [] : getAvailableKans(state);
@@ -109,6 +109,7 @@ function renderTable(state) {
   const submitDisabled = (state.status !== "playing" && state.status !== "tutorial")
     || (state.riichi?.active && state.riichi.phase !== "ready");
   const waitTitle = riichiState.waits.length ? ` title="대기패: ${riichiState.waits.map(tileName).join(", ")}"` : "";
+  const tutorialTarget = isTutorial ? getTutorialTarget(state, score) : null;
 
   return `
     <section class="table ${state.riichi?.active ? "is-riichi" : ""}">
@@ -116,17 +117,20 @@ function renderTable(state) {
         ${renderKanSets(state)}
         <div class="play-area">
           <div class="hand" aria-label="손패">
-            ${state.hand.map((tile) => tileButton(tile, state.selected, state.riichi, state.kan, kanCandidateKeys, riichiCandidates)).join("")}
+            ${state.hand.map((tile) => tileButton(tile, state.selected, state.riichi, state.kan, kanCandidateKeys, riichiCandidates, {
+              tutorialTarget: tile.copyId === "tutorial-discard" ? "discard-tile" : "",
+              isTutorialTarget: tutorialTarget === "discard-tile" && tile.copyId === "tutorial-discard",
+            })).join("")}
           </div>
           ${renderRiichiTrace(state)}
         </div>
       </div>
       <div class="actions">
-        <button data-action="exchange" ${exchangeDisabled ? "disabled" : ""}>선택한 패 교환</button>
+        <button data-action="exchange" data-tutorial-target="exchange-button" class="${tutorialTarget === "exchange-button" ? "tutorial-target-active" : ""}" ${exchangeDisabled ? "disabled" : ""}>선택한 패 교환</button>
         ${isTutorial ? "" : `<button data-action="declare-riichi"${waitTitle} ${riichiDisabled ? "disabled" : ""}>리치</button>`}
         ${state.riichi?.phase === "selectingDiscard" ? `<button class="secondary" data-action="cancel-riichi">리치 취소</button>` : ""}
         ${kanOptions.map((kan) => `<button data-action="declare-kan" data-kan-face="${kan.key}" title="${tileName(kan.tile)} 깡">깡</button>`).join("")}
-        <button data-action="submit" ${submitDisabled ? "disabled" : ""}>조합 제출</button>
+        <button data-action="submit" data-tutorial-target="submit-button" class="${tutorialTarget === "submit-button" ? "tutorial-target-active" : ""}" ${submitDisabled ? "disabled" : ""}>조합 제출</button>
         <button class="secondary" data-action="${isTutorial ? "skip-tutorial" : "restart"}">${isTutorial ? "본 게임으로" : "새 게임"}</button>
       </div>
       <p class="message">${state.message}</p>
@@ -221,9 +225,13 @@ function renderInfoGrid(state, score) {
 }
 
 function renderOverlays(state, score, uiState) {
+  const tutorialTarget = state.mode === "tutorial" ? getTutorialTarget(state, score) : null;
   return `
     ${state.status === "tutorialComplete" ? renderTutorialComplete(score) : ""}
-    ${state.status === "startReward" ? renderReward(state.rewardOptions, "시작 유물 선택", "이번 런에서 처음 사용할 유물을 하나 고르세요.") : ""}
+    ${state.status === "startReward" ? renderReward(state.rewardOptions, "시작 유물 선택", "이번 런에서 처음 사용할 유물을 하나 고르세요.", {
+      tutorialTarget: "start-reward",
+      activeTarget: tutorialTarget,
+    }) : ""}
     ${state.status === "reward" ? renderReward(state.rewardOptions, "보상 선택", "라운드를 통과했습니다. 다음 라운드에 가져갈 보상을 고르세요.") : ""}
     ${state.status === "shop" ? renderShop(state) : ""}
     ${state.status === "lost" || state.status === "won" ? renderEnd(state.status, state.message) : ""}

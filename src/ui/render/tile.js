@@ -1,7 +1,15 @@
 import { tileName } from "../../game.js";
 import { renderTileFace } from "../../tileArt.js";
 
-export function tileButton(tile, selectedIds, riichi = null, kan = null, kanCandidateKeys = new Set(), riichiCandidates = []) {
+export function tileButton(
+  tile,
+  selectedIds,
+  riichi = null,
+  kan = null,
+  kanCandidateKeys = new Set(),
+  riichiCandidates = [],
+  options = {},
+) {
   const selected = selectedIds.includes(tile.copyId);
   const faceKey = `${tile.suit}${tile.value}`;
   const riichiCandidate = riichiCandidates.find((candidate) => candidate.exchangeTileId === tile.copyId);
@@ -18,6 +26,8 @@ export function tileButton(tile, selectedIds, riichi = null, kan = null, kanCand
     riichi?.lastDrawnTile?.copyId === tile.copyId ? "riichi-drawn" : "",
     riichi?.phase === "ready" ? "riichi-ready" : "",
     kan?.lastRinshanTileId === tile.copyId ? "riichi-drawn" : "",
+    options.isTutorialTarget ? "tutorial-target-active" : "",
   ].join(" ");
-  return `<button class="${classes}" data-tile="${tile.copyId}" aria-label="${tileName(tile)}" aria-pressed="${selected}" title="${tileName(tile)}${riichiWaitTitle}">${renderTileFace(tile)}</button>`;
+  const tutorialTarget = options.tutorialTarget ? ` data-tutorial-target="${options.tutorialTarget}"` : "";
+  return `<button class="${classes}" data-tile="${tile.copyId}"${tutorialTarget} aria-label="${tileName(tile)}" aria-pressed="${selected}" title="${tileName(tile)}${riichiWaitTitle}">${renderTileFace(tile)}</button>`;
 }

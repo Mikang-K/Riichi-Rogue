@@ -100,7 +100,9 @@ export function renderTutorialComplete(score) {
   `;
 }
 
-export function renderReward(rewardOptions, title = "보상 선택", note = "") {
+export function renderReward(rewardOptions, title = "보상 선택", note = "", options = {}) {
+  const isActiveTarget = options.activeTarget === options.tutorialTarget;
+  const tutorialTarget = options.tutorialTarget ? ` data-tutorial-target="${options.tutorialTarget}"` : "";
   return `
     <section class="overlay">
       <div class="modal">
@@ -108,7 +110,7 @@ export function renderReward(rewardOptions, title = "보상 선택", note = "") 
         ${note ? `<p class="modal-note">${note}</p>` : ""}
         <div class="reward-grid">
           ${rewardOptions.map((reward) => `
-            <button class="reward reward-${reward.type ?? "relic"} relic-${reward.rarity ?? "common"}" data-reward-id="${reward.id}">
+            <button class="reward reward-${reward.type ?? "relic"} relic-${reward.rarity ?? "common"} ${isActiveTarget ? "tutorial-target-active" : ""}" data-reward-id="${reward.id}"${tutorialTarget}>
               <small>${formatRewardType(reward.type)} - ${formatRarity(reward.rarity)}</small>
               <strong>${reward.name}</strong>
               <span>${reward.text}</span>
