@@ -288,7 +288,7 @@ if (!sukantsuScore.yaku.some((item) => item.id === "sukantsu") || sukantsuScore.
 }
 
 const submittedRiichi = submitHand(advancedRiichi);
-if (submittedRiichi.status !== "reward" && submittedRiichi.status !== "won") {
+if (submittedRiichi.status !== "shop" && submittedRiichi.status !== "won") {
   throw new Error("리치 성공 후 조합 제출로 다음 흐름에 진입하지 못했습니다.");
 }
 

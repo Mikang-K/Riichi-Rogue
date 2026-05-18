@@ -38,18 +38,38 @@ const RIICHI_YAKU_MULTIPLIER_BONUS = 0.75;
 const RIICHI_LEFTOVER_DISCARD_BONUS = 0.1;
 const MAX_RIICHI_YAKU_MULTIPLIER_BONUS = 1.5;
 const MAX_KAN_DECLARATIONS = 4;
+const ROUND_CLEAR_BASE_COINS = 4;
+const OVER_SCORE_PER_BONUS_COIN = 25;
+const MAX_OVER_SCORE_BONUS_COINS = 6;
+const STARTING_HAND_SIZE = 14;
+const BASE_SHOP_EDIT_LIMITS = {
+  removeTile: 1,
+  addTile: 1,
+  upgradeTile: 1,
+};
+const SHOP_PRICES = {
+  relic: { common: 6, rare: 9, legendary: 13 },
+  augment: { common: 4, rare: 7, legendary: 10 },
+  tileAdd: 3,
+  tileRemove: 5,
+  tileUpgrade: 4,
+};
+const TILE_UPGRADES = [
+  { id: "polished", name: "광택", text: "이 패의 기본 점수 +3점", tileScoreBonus: 3 },
+  { id: "etched", name: "각인", text: "이 패의 기본 점수 +5점", tileScoreBonus: 5 },
+];
 export function newRun() {
-  const wall = setupWall();
-  const hand = sortTiles(draw(wall.liveWall, 14));
+  const playerTiles = buildStartingPlayerTiles();
+  const round = createRoundDeal(playerTiles);
 
   return {
     mode: "main",
-    deck: wall.liveWall,
-    hand,
+    deck: round.deck,
+    hand: round.hand,
     selected: [],
-    dora: getVisibleDoraIndicators(wall.doraState)[0],
-    doraState: wall.doraState,
-    deadWall: wall.deadWall,
+    dora: getVisibleDoraIndicators(round.doraState)[0],
+    doraState: round.doraState,
+    deadWall: round.deadWall,
     kan: emptyKanState(),
     roundIndex: 0,
     maxDiscards: BASE_MAX_DISCARDS,
@@ -57,6 +77,9 @@ export function newRun() {
     riichi: emptyRiichiState(),
     relics: [],
     augments: [],
+    playerTiles,
+    shop: null,
+    shopEditLimits: { ...BASE_SHOP_EDIT_LIMITS },
     coins: 0,
     status: "startReward",
     rewardOptions: getStartRewardOptions(),
@@ -85,6 +108,9 @@ export function newTitle() {
     riichi: emptyRiichiState(),
     relics: [],
     augments: [],
+    playerTiles: [],
+    shop: null,
+    shopEditLimits: { ...BASE_SHOP_EDIT_LIMITS },
     coins: 0,
     status: "title",
     message: "튜토리얼로 감을 익히거나 바로 본 게임을 시작하세요.",
@@ -136,6 +162,9 @@ export function newTutorial() {
     riichi: emptyRiichiState(),
     relics: [relicPool[0]],
     augments: [],
+    playerTiles: buildStartingPlayerTiles(),
+    shop: null,
+    shopEditLimits: { ...BASE_SHOP_EDIT_LIMITS },
     coins: 0,
     status: "tutorial",
     message: "연습 목표: 동을 선택해 교환하면 6통이 들어와 완료할 수 있습니다.",
@@ -143,19 +172,20 @@ export function newTutorial() {
 }
 
 export function startRound(state) {
-  const wall = setupWall();
+  const round = createRoundDeal(state.playerTiles?.length ? state.playerTiles : buildStartingPlayerTiles());
   return {
     ...state,
     mode: "main",
-    deck: wall.liveWall,
-    hand: sortTiles(draw(wall.liveWall, 14)),
+    deck: round.deck,
+    hand: round.hand,
     selected: [],
-    dora: getVisibleDoraIndicators(wall.doraState)[0],
-    doraState: wall.doraState,
-    deadWall: wall.deadWall,
+    dora: getVisibleDoraIndicators(round.doraState)[0],
+    doraState: round.doraState,
+    deadWall: round.deadWall,
     kan: emptyKanState(),
     discardsLeft: state.maxDiscards,
     riichi: emptyRiichiState(),
+    shop: null,
     status: "playing",
     message: `${rounds[state.roundIndex].name} 시작.`,
   };
@@ -392,17 +422,24 @@ function finishScoredHand(state, result, successMessage = null) {
   }
 
   const nextRoundIndex = state.roundIndex + 1;
+  const coinReward = getRoundClearCoins(result.totalScore, targetScore);
   if (nextRoundIndex >= rounds.length) {
-    return { ...state, status: "won", coins: state.coins + scoreToCoins(result.totalScore), message: successMessage ?? `최종 ${result.totalScore}점. 완주 성공!` };
+    return {
+      ...state,
+      status: "won",
+      coins: state.coins + coinReward.totalCoins,
+      message: successMessage ?? `최종 ${result.totalScore}점. 완주 성공! ${coinReward.totalCoins}코인을 획득했습니다.`,
+    };
   }
 
   return {
     ...state,
-    status: "reward",
-    coins: state.coins + scoreToCoins(result.totalScore),
+    status: "shop",
+    coins: state.coins + coinReward.totalCoins,
     selected: [],
-    rewardOptions: getRewardOptions(state),
-    message: successMessage ?? `${result.totalScore}점으로 통과했습니다. 보상을 하나 고르세요.`,
+    rewardOptions: [],
+    shop: createShopState(state, result, targetScore, coinReward),
+    message: successMessage ?? `${result.totalScore}점으로 통과했습니다. ${coinReward.totalCoins}코인을 획득했습니다.`,
   };
 }
 
@@ -450,13 +487,128 @@ function chooseAugmentReward(state, augment) {
   });
 }
 
+export function buyShopOffer(state, offerId) {
+  if (state.status !== "shop") return state;
+  const offers = getFlatShopOffers(state.shop);
+  const offer = offers.find((item) => item.id === offerId);
+  if (!offer) return state;
+  if (offer.sold) return { ...state, message: "이미 구매한 상품입니다." };
+  if (state.coins < offer.price) return { ...state, message: "코인이 부족합니다." };
+
+  if (offer.type === "relic") {
+    const playerState = applyRelicPlayerEffect(
+      { ...state, coins: state.coins - offer.price },
+      offer.item,
+    );
+    return markShopOfferSold({
+      ...playerState,
+      relics: [...playerState.relics, offer.item],
+      shop: refreshCurrentShopLimits(playerState.shop, playerState.shopEditLimits),
+      message: `${offer.item.name}을 구매했습니다.`,
+    }, offerId);
+  }
+
+  if (offer.type === "augment") {
+    return markShopOfferSold({
+      ...state,
+      coins: state.coins - offer.price,
+      augments: [...(state.augments ?? []), offer.item],
+      message: `${offer.item.name}을 구매했습니다.`,
+    }, offerId);
+  }
+
+  if (offer.type === "tileAdd") {
+    return buyTileAdd(state, offerId);
+  }
+
+  if (offer.type === "tileUpgrade") {
+    return buyTileUpgrade(state, offerId);
+  }
+
+  if (offer.type === "tileRemove") {
+    return buyTileRemoval(state, offerId);
+  }
+
+  return state;
+}
+
+export function buyTileAdd(state, offerId) {
+  if (state.status !== "shop") return state;
+  const offer = (state.shop?.offers?.tileAdds ?? []).find((item) => item.id === offerId);
+  if (!offer) return state;
+  if (offer.sold) return { ...state, message: "이미 추가한 패입니다." };
+  if (!canUseShopEdit(state, "addTile")) return state;
+  if (state.coins < offer.price) return { ...state, message: "코인이 부족합니다." };
+  const tile = createPlayerTile(offer.tile.suit, offer.tile.value, "shop-add", offer.tile.enhancement);
+  return markShopOfferSold({
+    ...state,
+    coins: state.coins - offer.price,
+    playerTiles: [...(state.playerTiles ?? []), tile],
+    shop: useShopEdit(state.shop, "addTile"),
+    message: `${tileName(tile)}을 패 풀에 추가했습니다.`,
+  }, offerId);
+}
+
+export function buyTileRemoval(state, offerId) {
+  if (state.status !== "shop") return state;
+  const offer = (state.shop?.offers?.tileRemoves ?? []).find((item) => item.id === offerId);
+  if (!offer) return state;
+  if (offer.sold) return { ...state, message: "이미 삭제한 패입니다." };
+  if (!canUseShopEdit(state, "removeTile")) return state;
+  if (state.coins < SHOP_PRICES.tileRemove) return { ...state, message: "코인이 부족합니다." };
+  const tile = (state.playerTiles ?? []).find((item) => item.copyId === offer.tile.copyId);
+  if (!tile) return state;
+  if ((state.playerTiles ?? []).length <= 1) {
+    return { ...state, message: "패 풀의 마지막 1장은 삭제할 수 없습니다." };
+  }
+  return markShopOfferSold({
+    ...state,
+    coins: state.coins - SHOP_PRICES.tileRemove,
+    playerTiles: state.playerTiles.filter((item) => item.copyId !== offer.tile.copyId),
+    shop: useShopEdit(state.shop, "removeTile"),
+    message: `${tileName(tile)}을 패 풀에서 삭제했습니다.`,
+  }, offerId);
+}
+
+export function buyTileUpgrade(state, offerId) {
+  if (state.status !== "shop") return state;
+  const offer = (state.shop?.offers?.tileUpgrades ?? []).find((item) => item.id === offerId);
+  if (!offer) return state;
+  if (offer.sold) return { ...state, message: "이미 강화한 패입니다." };
+  if (!canUseShopEdit(state, "upgradeTile")) return state;
+  if (state.coins < offer.price) return { ...state, message: "코인이 부족합니다." };
+  const upgrade = offer.upgrade;
+  const tile = (state.playerTiles ?? []).find((item) => item.copyId === offer.tile.copyId);
+  if (!tile) return state;
+  const nextEnhancement = combineEnhancement(tile.enhancement, upgrade);
+  return markShopOfferSold({
+    ...state,
+    coins: state.coins - offer.price,
+    playerTiles: state.playerTiles.map((item) =>
+      item.copyId === offer.tile.copyId ? { ...item, enhancement: nextEnhancement } : item,
+    ),
+    shop: useShopEdit(state.shop, "upgradeTile"),
+    message: `${tileName(tile)}을 강화했습니다.`,
+  }, offerId);
+}
+
+export function leaveShop(state) {
+  if (state.status !== "shop") return state;
+  return startRound({
+    ...state,
+    roundIndex: state.roundIndex + 1,
+  });
+}
+
 export function scoreHand(tiles, dora, relics = [], context = {}) {
   const counts = countTiles(tiles);
   const analysis = analyzeHand(tiles);
-  const yaku = analysis.isComplete ? evaluateYaku(tiles, analysis, context) : [];
+  const regularYaku = analysis.isComplete ? evaluateYaku(tiles, analysis, context) : [];
+  const rogueYaku = evaluateRogueYaku(tiles, analysis, context);
+  const yaku = [...regularYaku, ...rogueYaku];
   const doraBreakdown = getDoraBreakdown(tiles, dora, context);
   const doraCount = doraBreakdown.totalCount;
-  const tileScore = tiles.reduce((sum, tile) => sum + getTileBaseScore(tile), 0);
+  const tileScore = tiles.reduce((sum, tile) => sum + getTileScore(tile), 0);
   const yakuScore = yaku.reduce((sum, item) => sum + item.score, 0);
   const doraScore = analysis.isComplete ? doraCount * DORA_SCORE : 0;
   const totalHan = yaku.reduce((sum, item) => sum + item.han, 0) + (analysis.isComplete ? doraCount : 0);
@@ -529,6 +681,53 @@ function getTileBaseScore(tile) {
   return tile.suit === "z" ? HONOR_TILE_SCORE : tile.value;
 }
 
+function getTileScore(tile) {
+  return getTileBaseScore(tile) + (tile.enhancement?.tileScoreBonus ?? 0);
+}
+
+function evaluateRogueYaku(tiles, analysis, context = {}) {
+  if (!analysis.isComplete) return [];
+  const results = [];
+  const counts = countTiles(tiles);
+  const highestDuplicate = Math.max(0, ...counts.values());
+  const playerTileCount = context.playerTiles?.length ?? null;
+
+  if (highestDuplicate >= 5) {
+    results.push({
+      id: "rogue-fivefold-face",
+      name: "오중 울림",
+      han: 2,
+      score: 28,
+      text: "완성 손패에 같은 얼굴의 패가 5장 이상 있습니다.",
+      rogue: true,
+    });
+  }
+
+  if (highestDuplicate >= 6) {
+    results.push({
+      id: "rogue-sixfold-face",
+      name: "육중 울림",
+      han: 3,
+      score: 42,
+      text: "완성 손패에 같은 얼굴의 패가 6장 이상 있습니다.",
+      rogue: true,
+    });
+  }
+
+  if (playerTileCount !== null && playerTileCount < STARTING_HAND_SIZE) {
+    results.push({
+      id: "rogue-thin-wall",
+      name: "얇은 패산",
+      han: 1,
+      score: 16,
+      text: "플레이어 패 풀이 14장보다 적은 상태에서 승리했습니다.",
+      rogue: true,
+    });
+  }
+
+  return results;
+}
+
 function emptyScoreBonus() {
   return {
     tileScoreBonus: 0,
@@ -584,6 +783,7 @@ function getRiichiMultiplierBonus(context) {
 function getScoreContext(state) {
   const context = {
     augments: state.augments ?? [],
+    playerTiles: state.playerTiles ?? [],
     rinshan: state.kan?.rinshanReady === true,
     kanCount: state.kan?.declaredCount ?? 0,
     kanSets: state.kan?.sets ?? [],
@@ -635,8 +835,15 @@ function emptyDeadWall() {
   };
 }
 
-function scoreToCoins(score) {
-  return Math.max(1, Math.floor(score / 25));
+function getRoundClearCoins(totalScore, targetScore) {
+  const overScore = Math.max(0, totalScore - targetScore);
+  const bonusCoins = Math.min(MAX_OVER_SCORE_BONUS_COINS, Math.floor(overScore / OVER_SCORE_PER_BONUS_COIN));
+  return {
+    baseCoins: ROUND_CLEAR_BASE_COINS,
+    bonusCoins,
+    totalCoins: ROUND_CLEAR_BASE_COINS + bonusCoins,
+    overScore,
+  };
 }
 
 function buildDeck() {
@@ -650,6 +857,52 @@ function buildDeck() {
       copyId: `${face.suit}${face.value}-${copy}-${crypto.randomUUID()}`,
     })),
   );
+}
+
+function buildStartingPlayerTiles() {
+  return buildDeck().map((tile) => ({
+    ...tile,
+    copyId: `player-${tile.copyId}`,
+  }));
+}
+
+function createRoundDeal(playerTiles) {
+  const wall = setupWall();
+  return {
+    deck: wall.liveWall,
+    hand: sortTiles(drawPlayerHand(playerTiles, STARTING_HAND_SIZE)),
+    doraState: wall.doraState,
+    deadWall: wall.deadWall,
+  };
+}
+
+function drawPlayerHand(playerTiles, count) {
+  const source = playerTiles?.length ? playerTiles : buildStartingPlayerTiles();
+  const shuffled = shuffle(source);
+  const hand = [];
+  for (let index = 0; index < count; index += 1) {
+    const base = index < shuffled.length ? shuffled[index] : source[Math.floor(Math.random() * source.length)];
+    hand.push(cloneTileForRound(base, "hand"));
+  }
+  return hand;
+}
+
+function cloneTileForRound(tile, prefix) {
+  return {
+    suit: tile.suit,
+    value: tile.value,
+    enhancement: tile.enhancement ? { ...tile.enhancement } : undefined,
+    copyId: `${prefix}-${tile.suit}${tile.value}-${crypto.randomUUID()}`,
+  };
+}
+
+function createPlayerTile(suit, value, prefix = "player", enhancement = undefined) {
+  return {
+    suit,
+    value,
+    enhancement: enhancement ? { ...enhancement } : undefined,
+    copyId: `${prefix}-${suit}${value}-${crypto.randomUUID()}`,
+  };
 }
 
 function setupWall() {
@@ -717,11 +970,15 @@ function fixedTile(suit, value, copyId) {
 
 function applyRelicPlayerEffect(state, relic) {
   if (!relic.player) return state;
-  const player = relic.player({ maxDiscards: state.maxDiscards });
+  const player = relic.player({
+    maxDiscards: state.maxDiscards,
+    shopEditLimits: state.shopEditLimits ?? { ...BASE_SHOP_EDIT_LIMITS },
+  });
   return {
     ...state,
     maxDiscards: player.maxDiscards,
     discardsLeft: Math.min(state.discardsLeft, player.maxDiscards),
+    shopEditLimits: player.shopEditLimits ?? state.shopEditLimits,
   };
 }
 
@@ -767,6 +1024,144 @@ function getAugmentRewardOptions(currentAugments, count) {
   return drawWeightedItems(augmentPool.filter((augment) => !owned.has(augment.id)), count).map((item) =>
     createRewardOption("augment", item),
   );
+}
+
+function createShopState(state, result, targetScore, coinReward) {
+  return {
+    roundIndex: state.roundIndex,
+    lastScore: result.totalScore,
+    lastTargetScore: targetScore,
+    lastReward: coinReward,
+    offers: {
+      relics: getRelicRewardOptions(state.relics ?? [], 2).map(createShopOffer),
+      augments: getAugmentRewardOptions(state.augments ?? [], 2).map(createShopOffer),
+      tileUpgrades: createTileUpgradeOffers(state.playerTiles ?? [], 3),
+      tileAdds: createTileAddOffers(state.playerTiles ?? [], 3),
+      tileRemoves: createTileRemoveOffers(state.playerTiles ?? [], 3),
+    },
+    editsUsed: {
+      removeTile: 0,
+      addTile: 0,
+      upgradeTile: 0,
+    },
+    editsLimit: { ...(state.shopEditLimits ?? BASE_SHOP_EDIT_LIMITS) },
+  };
+}
+
+function createShopOffer(reward) {
+  return {
+    ...reward,
+    price: getShopRewardPrice(reward),
+    sold: false,
+  };
+}
+
+function createTileAddOffers(playerTiles, count) {
+  return drawWeightedItems(playerTiles, count).map((tile, index) => ({
+    id: `tile-add-${tile.suit}${tile.value}-${index}-${crypto.randomUUID()}`,
+    type: "tileAdd",
+    name: `${tileName(tile)} 추가`,
+    text: "현재 패 풀에 이 패의 복사본을 1장 추가합니다.",
+    rarity: "common",
+    tile,
+    price: SHOP_PRICES.tileAdd,
+    sold: false,
+  }));
+}
+
+function createTileUpgradeOffers(playerTiles, count) {
+  return drawWeightedItems(playerTiles, count).map((tile, index) => {
+    const upgrade = TILE_UPGRADES[index % TILE_UPGRADES.length];
+    return {
+      id: `tile-upgrade-${tile.suit}${tile.value}-${index}-${crypto.randomUUID()}`,
+      type: "tileUpgrade",
+      name: `${tileName(tile)} 강화`,
+      text: upgrade.text,
+      rarity: "common",
+      tile,
+      upgrade,
+      price: SHOP_PRICES.tileUpgrade,
+      sold: false,
+    };
+  });
+}
+
+function createTileRemoveOffers(playerTiles, count) {
+  return drawWeightedItems(playerTiles, count).map((tile, index) => ({
+    id: `tile-remove-${tile.suit}${tile.value}-${index}-${crypto.randomUUID()}`,
+    type: "tileRemove",
+    name: `${tileName(tile)} 삭제`,
+    text: "현재 패 풀에서 이 패를 1장 삭제합니다.",
+    rarity: "common",
+    tile,
+    price: SHOP_PRICES.tileRemove,
+    sold: false,
+  }));
+}
+
+function getShopRewardPrice(reward) {
+  if (reward.type === "relic") return SHOP_PRICES.relic[reward.rarity] ?? SHOP_PRICES.relic.common;
+  if (reward.type === "augment") return SHOP_PRICES.augment[reward.rarity] ?? SHOP_PRICES.augment.common;
+  return SHOP_PRICES.tileAdd;
+}
+
+function getFlatShopOffers(shop) {
+  return [
+    ...(shop?.offers?.relics ?? []),
+    ...(shop?.offers?.augments ?? []),
+    ...(shop?.offers?.tileUpgrades ?? []),
+    ...(shop?.offers?.tileAdds ?? []),
+    ...(shop?.offers?.tileRemoves ?? []),
+  ];
+}
+
+function markShopOfferSold(state, offerId) {
+  return {
+    ...state,
+    shop: {
+      ...state.shop,
+      offers: Object.fromEntries(
+        Object.entries(state.shop.offers).map(([key, offers]) => [
+          key,
+          offers.map((offer) => offer.id === offerId ? { ...offer, sold: true } : offer),
+        ]),
+      ),
+    },
+  };
+}
+
+function refreshCurrentShopLimits(shop, shopEditLimits) {
+  if (!shop) return shop;
+  return {
+    ...shop,
+    editsLimit: { ...(shopEditLimits ?? BASE_SHOP_EDIT_LIMITS) },
+  };
+}
+
+function canUseShopEdit(state, type) {
+  const used = state.shop?.editsUsed?.[type] ?? 0;
+  const limit = state.shop?.editsLimit?.[type] ?? 0;
+  return used < limit;
+}
+
+function useShopEdit(shop, type) {
+  return {
+    ...shop,
+    editsUsed: {
+      ...shop.editsUsed,
+      [type]: (shop.editsUsed?.[type] ?? 0) + 1,
+    },
+  };
+}
+
+function combineEnhancement(current, upgrade) {
+  const tileScoreBonus = (current?.tileScoreBonus ?? 0) + upgrade.tileScoreBonus;
+  return {
+    id: upgrade.id,
+    name: current?.name ? `${current.name}+${upgrade.name}` : upgrade.name,
+    text: `이 패의 기본 점수 +${tileScoreBonus}점`,
+    tileScoreBonus,
+  };
 }
 
 function createRewardOption(type, item) {

@@ -4,187 +4,148 @@
     "name": "대나무 렌즈",
     "rarity": "common",
     "text": "삭수 슌쯔마다 역 점수 +8점",
-    "effect": {
-      "type": "sequenceSuitScoreBonus",
-      "suit": "s",
-      "scorePerSequence": 8
-    }
+    "effect": { "type": "sequenceSuitScoreBonus", "suit": "s", "scorePerSequence": 8 }
   },
   {
     "id": "red-stick",
     "name": "붉은 점봉",
     "rarity": "rare",
-    "text": "커쯔 2개 이상이면 역 점수 +24점",
-    "effect": {
-      "type": "tripletThresholdScoreBonus",
-      "threshold": 2,
-      "score": 24
-    }
+    "text": "커쯔가 2개 이상이면 역 점수 +24점",
+    "effect": { "type": "tripletThresholdScoreBonus", "threshold": 2, "score": 24 }
   },
   {
     "id": "quiet-ready",
-    "name": "고요한 리치봉",
+    "name": "고요한 리치패",
     "rarity": "rare",
-    "text": "기본 역이 1개뿐이면 역 배수 +0.5",
-    "effect": {
-      "type": "singleYakuMultiplierBonus",
-      "multiplier": 0.5
-    }
+    "text": "역이 1개뿐이면 역 배율 +0.5",
+    "effect": { "type": "singleYakuMultiplierBonus", "multiplier": 0.5 }
   },
   {
     "id": "honor-cache",
     "name": "자패 금고",
     "rarity": "common",
-    "text": "자패 3장 이상이면 패 점수 +12점",
-    "effect": {
-      "type": "honorTileThresholdScoreBonus",
-      "threshold": 3,
-      "score": 12
-    }
+    "text": "자패가 3장 이상이면 패 점수 +12점",
+    "effect": { "type": "honorTileThresholdScoreBonus", "threshold": 3, "score": 12 }
   },
   {
     "id": "clean-brush",
     "name": "청색 붓",
     "rarity": "common",
     "text": "자패가 없으면 패 점수 +14점",
-    "effect": {
-      "type": "noHonorTileScoreBonus",
-      "score": 14
-    }
+    "effect": { "type": "noHonorTileScoreBonus", "score": 14 }
   },
   {
     "id": "pair-coin",
-    "name": "동전 또이",
+    "name": "동전 짝",
     "rarity": "common",
     "text": "또이쯔마다 역 점수 +6점",
-    "effect": {
-      "type": "pairCountScoreBonus",
-      "scorePerPair": 6
-    }
+    "effect": { "type": "pairCountScoreBonus", "scorePerPair": 6 }
   },
   {
     "id": "dora-bell",
     "name": "도라 방울",
     "rarity": "common",
     "text": "도라가 있으면 역 점수 +10점",
-    "effect": {
-      "type": "doraPresenceScoreBonus",
-      "score": 10
-    }
+    "effect": { "type": "doraPresenceScoreBonus", "score": 10 }
   },
   {
     "id": "dora-mirror",
     "name": "도라 거울",
     "rarity": "rare",
     "text": "도라 1장마다 역 점수 +18점",
-    "effect": {
-      "type": "doraCountScoreBonus",
-      "scorePerDora": 18
-    }
+    "effect": { "type": "doraCountScoreBonus", "scorePerDora": 18 }
   },
   {
     "id": "same-number",
-    "name": "삼색 숫패",
+    "name": "삼색 숫자패",
     "rarity": "common",
-    "text": "세 종류에 같은 숫자가 있으면 역 점수 +18점",
-    "effect": {
-      "type": "sameNumberAllSuitsScoreBonus",
-      "score": 18
-    }
+    "text": "세 수패에 같은 숫자가 있으면 역 점수 +18점",
+    "effect": { "type": "sameNumberAllSuitsScoreBonus", "score": 18 }
   },
   {
     "id": "terminal-prism",
     "name": "끝패 프리즘",
     "rarity": "common",
     "text": "1, 9, 자패마다 패 점수 +3점",
-    "effect": {
-      "type": "terminalHonorPerTileScoreBonus",
-      "scorePerTile": 3
-    }
+    "effect": { "type": "terminalHonorPerTileScoreBonus", "scorePerTile": 3 }
   },
   {
     "id": "simple-polish",
-    "name": "중장패 광택제",
+    "name": "중장패 광택",
     "rarity": "rare",
-    "text": "모든 패가 2~8 수패이면 패 배수 +0.45",
-    "effect": {
-      "type": "allSimpleTileMultiplierBonus",
-      "multiplier": 0.45
-    }
+    "text": "모든 패가 2~8 수패이면 패 배율 +0.45",
+    "effect": { "type": "allSimpleTileMultiplierBonus", "multiplier": 0.45 }
   },
   {
     "id": "straight-compass",
     "name": "일직선 나침반",
     "rarity": "rare",
-    "text": "슌쯔가 3개 이상이면 역 배수 +0.45",
-    "effect": {
-      "type": "sequenceThresholdMultiplierBonus",
-      "threshold": 3,
-      "multiplier": 0.45
-    }
+    "text": "슌쯔가 3개 이상이면 역 배율 +0.45",
+    "effect": { "type": "sequenceThresholdMultiplierBonus", "threshold": 3, "multiplier": 0.45 }
   },
   {
     "id": "triplet-drum",
     "name": "커쯔 북",
     "rarity": "common",
     "text": "커쯔마다 역 점수 +10점",
-    "effect": {
-      "type": "tripletCountScoreBonus",
-      "scorePerTriplet": 10
-    }
+    "effect": { "type": "tripletCountScoreBonus", "scorePerTriplet": 10 }
   },
   {
     "id": "flush-lantern",
     "name": "일색 등롱",
     "rarity": "legendary",
-    "text": "수패가 한 종류뿐이면 전체 배수 +0.8",
-    "effect": {
-      "type": "flushGlobalMultiplierBonus",
-      "multiplier": 0.8
-    }
+    "text": "수패가 한 종류뿐이면 전체 배율 +0.8",
+    "effect": { "type": "flushGlobalMultiplierBonus", "multiplier": 0.8 }
   },
   {
     "id": "dragon-seal",
-    "name": "삼원 봉인",
+    "name": "삼원패 봉인",
     "rarity": "rare",
     "text": "백, 발, 중 커쯔마다 역 점수 +22점",
-    "effect": {
-      "type": "dragonTripletScoreBonus",
-      "scorePerTriplet": 22
-    }
+    "effect": { "type": "dragonTripletScoreBonus", "scorePerTriplet": 22 }
   },
   {
     "id": "yakuman-banner",
-    "name": "역만 현수막",
+    "name": "역만 깃발",
     "rarity": "legendary",
-    "text": "역만이면 전체 배수 +1",
-    "effect": {
-      "type": "yakumanGlobalMultiplierBonus",
-      "multiplier": 1
-    }
+    "text": "역만이면 전체 배율 +1",
+    "effect": { "type": "yakumanGlobalMultiplierBonus", "multiplier": 1 }
   },
   {
     "id": "spare-wall",
     "name": "여분의 패산",
     "rarity": "common",
     "text": "매 라운드 교환 횟수 +1",
-    "playerEffect": {
-      "type": "maxDiscardsDelta",
-      "delta": 1
-    }
+    "playerEffect": { "type": "maxDiscardsDelta", "delta": 1 }
   },
   {
     "id": "heavy-stick",
     "name": "무거운 점봉",
     "rarity": "legendary",
-    "text": "매 라운드 교환 횟수 -1, 역 배수 +0.75",
-    "effect": {
-      "type": "flatYakuMultiplierBonus",
-      "multiplier": 0.75
-    },
-    "playerEffect": {
-      "type": "maxDiscardsDelta",
-      "delta": -1
-    }
+    "text": "매 라운드 교환 횟수 -1, 역 배율 +0.75",
+    "effect": { "type": "flatYakuMultiplierBonus", "multiplier": 0.75 },
+    "playerEffect": { "type": "maxDiscardsDelta", "delta": -1 }
+  },
+  {
+    "id": "shop-chisel",
+    "name": "상점 끌",
+    "rarity": "common",
+    "text": "상점마다 패 삭제 횟수 +1",
+    "playerEffect": { "type": "shopEditLimitDelta", "editType": "removeTile", "delta": 1 }
+  },
+  {
+    "id": "tile-mold",
+    "name": "패 거푸집",
+    "rarity": "rare",
+    "text": "상점마다 패 추가 횟수 +1",
+    "playerEffect": { "type": "shopEditLimitDelta", "editType": "addTile", "delta": 1 }
+  },
+  {
+    "id": "austere-rack",
+    "name": "검소한 패꽂이",
+    "rarity": "rare",
+    "text": "상점마다 패 추가 횟수 -1, 역 배율 +0.5",
+    "effect": { "type": "flatYakuMultiplierBonus", "multiplier": 0.5 },
+    "playerEffect": { "type": "shopEditLimitDelta", "editType": "addTile", "delta": -1 }
   }
 ]

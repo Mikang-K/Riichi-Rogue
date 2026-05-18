@@ -4,7 +4,7 @@ export function renderScore(score) {
     : `<li><span>${score.isComplete ? "역 없음" : "미완성 손패"}</span><strong>0점</strong></li>`;
   const relics = score.relicBonuses.length
     ? score.relicBonuses.map(renderRelicBonus).join("")
-    : `<li><span>발동 유물 없음</span><strong>0점</strong></li>`;
+    : `<li><span>발동한 유물 없음</span><strong>0점</strong></li>`;
   const augments = score.augmentBonuses.length
     ? score.augmentBonuses.map(renderAugmentBonus).join("")
     : "";
@@ -13,15 +13,15 @@ export function renderScore(score) {
     <ul class="score-list">
       <li><span>패 기본 점수</span><strong>${score.tileScore}점</strong></li>
       <li><span>패 점수 보너스</span><strong>+${score.tileScoreBonus}점</strong></li>
-      <li><span>패 배수</span><strong>x${formatMultiplier(score.tileMultiplier)}</strong></li>
+      <li><span>패 배율</span><strong>x${formatMultiplier(score.tileMultiplier)}</strong></li>
       ${yaku}
       <li><span>도라</span><strong>${score.doraScore}점 (${score.regularDoraCount ?? score.doraCount}장${score.uraDoraCount ? `, 뒷도라 ${score.uraDoraCount}장` : ""})</strong></li>
       ${relics}
       ${augments}
       ${score.riichiMultiplierBonus ? `<li><span>리치 보너스</span><strong>x+${formatMultiplier(score.riichiMultiplierBonus)}</strong></li>` : ""}
-      <li><span>역 배수</span><strong>x${formatMultiplier(score.yakuMultiplier)}</strong></li>
-      <li><span>역 완성 배수</span><strong>x${formatMultiplier(score.yakuCompletionMultiplier)}</strong></li>
-      <li><span>전체 배수</span><strong>x${formatMultiplier(score.globalMultiplier)}</strong></li>
+      <li><span>역 배율</span><strong>x${formatMultiplier(score.yakuMultiplier)}</strong></li>
+      <li><span>완성 배율</span><strong>x${formatMultiplier(score.yakuCompletionMultiplier)}</strong></li>
+      <li><span>전체 배율</span><strong>x${formatMultiplier(score.globalMultiplier)}</strong></li>
       <li><span>최종 점수</span><strong>${score.totalScore}점</strong></li>
     </ul>
   `;

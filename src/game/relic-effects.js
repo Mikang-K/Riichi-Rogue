@@ -102,4 +102,15 @@ export const relicPlayerEffectHandlers = {
     ...player,
     maxDiscards: Math.max(1, player.maxDiscards + relic.playerEffect.delta),
   }),
+
+  shopEditLimitDelta: ({ relic, player }) => ({
+    ...player,
+    shopEditLimits: {
+      ...player.shopEditLimits,
+      [relic.playerEffect.editType]: Math.max(
+        0,
+        (player.shopEditLimits?.[relic.playerEffect.editType] ?? 0) + relic.playerEffect.delta,
+      ),
+    },
+  }),
 };

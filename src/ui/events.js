@@ -10,6 +10,8 @@ import {
   newRun,
   newTutorial,
   chooseReward,
+  buyShopOffer,
+  leaveShop,
 } from "../game.js";
 import { playSfx, startBackgroundMusic, toggleBackgroundMusic } from "./audio.js";
 
@@ -39,6 +41,7 @@ export function initEvents({ getState, setState, getUiState, setUiState, rerende
     const rewardId = e.target.closest("[data-reward-id]")?.dataset.rewardId;
     const relicId = e.target.closest("[data-relic]")?.dataset.relic;
     const kanFace = e.target.closest("[data-kan-face]")?.dataset.kanFace;
+    const shopOfferId = e.target.closest("[data-shop-offer-id]")?.dataset.shopOfferId;
     const uiState = getUiState();
 
     if (action !== "toggle-music") {
@@ -60,6 +63,12 @@ export function initEvents({ getState, setState, getUiState, setUiState, rerende
 
     if (rewardId || relicId) {
       setState(chooseReward(getState(), rewardId ?? relicId));
+      rerender();
+      return;
+    }
+
+    if (shopOfferId) {
+      setState(buyShopOffer(getState(), shopOfferId));
       rerender();
       return;
     }
@@ -86,6 +95,10 @@ export function initEvents({ getState, setState, getUiState, setUiState, rerende
         break;
       case "declare-kan":
         setState(declareKan(getState(), kanFace));
+        rerender();
+        break;
+      case "leave-shop":
+        setState(leaveShop(getState()));
         rerender();
         break;
       case "submit":

@@ -6,7 +6,7 @@ export const yakuDefinitions = [
     hanOpen: null,
     score: 10,
     implemented: true,
-    text: "한 장만 교체하면 화료 가능한 상태에서 선언합니다. 선언 후에는 지정된 한 장만 자동 교체하며, 리치만으로도 화료 역을 충족합니다.",
+    text: "한 장만 교체하면 완성 가능한 상태에서 선언합니다. 선언 뒤에는 정해진 패만 자동으로 교체하며, 리치만으로도 화료 조건을 채울 수 있습니다.",
     exampleTiles: "123m 456m 789p 123s 55m",
   },
   {
@@ -16,8 +16,8 @@ export const yakuDefinitions = [
     hanOpen: 1,
     score: 10,
     implemented: true,
-    text: "깡 선언 후 영상패로 손패가 완성되면 붙습니다.",
-    example: "깡 후 영상패로 완성",
+    text: "깡을 선언한 뒤 받은 영상패로 손패가 완성되면 붙습니다.",
+    example: "깡 뒤 영상패로 완성",
   },
   {
     id: "sankantsu",
@@ -26,7 +26,7 @@ export const yakuDefinitions = [
     hanOpen: 2,
     score: 30,
     implemented: true,
-    text: "한 손에서 깡을 3번 선언하면 붙습니다.",
+    text: "한 손패에서 깡을 3번 선언하면 붙습니다.",
     example: "깡 3개",
   },
   {
@@ -37,7 +37,7 @@ export const yakuDefinitions = [
     score: 160,
     yakuman: true,
     implemented: true,
-    text: "한 손에서 깡을 4번 선언하면 성립하는 역만입니다.",
+    text: "한 손패에서 깡을 4번 선언하면 성립하는 역만입니다.",
     example: "깡 4개",
   },
   {
@@ -47,7 +47,7 @@ export const yakuDefinitions = [
     hanOpen: null,
     score: 10,
     implemented: false,
-    text: "남의 도움 없이 스스로 뽑은 패로 완성하면 붙는 역입니다. 현재는 화료 방식 상태가 없어 판정하지 않습니다.",
+    text: "남의 패를 가져오지 않고 스스로 뽑은 패로 완성하면 붙습니다. 현재는 별도 쯔모 상태가 없어 판정하지 않습니다.",
     example: "마지막 패를 직접 뽑아 완성",
   },
   {
@@ -67,7 +67,7 @@ export const yakuDefinitions = [
     hanOpen: null,
     score: 12,
     implemented: true,
-    text: "모든 몸통이 연속 숫자 3장이고, 머리가 점수패가 아닌 기본형입니다. 현재는 대기 형태를 단순화해 판정합니다.",
+    text: "모든 몸통이 슌쯔이고 머리가 점수패가 아닌 기본형입니다. 현재는 대기 형태를 단순화해 판정합니다.",
     exampleTiles: "123m 234p 345s 678m 55p",
   },
   {
@@ -77,7 +77,7 @@ export const yakuDefinitions = [
     hanOpen: 1,
     score: 12,
     implemented: true,
-    text: "백, 발, 중을 3장 모으면 붙습니다. 장풍/자풍 판정은 후속 단계에서 확장합니다.",
+    text: "백, 발, 중을 3장 모으면 붙습니다. 장풍과 자풍 판정은 이후 단계에서 확장합니다.",
     exampleTiles: "CCCz FFFz",
   },
   {
@@ -87,7 +87,7 @@ export const yakuDefinitions = [
     hanOpen: null,
     score: 10,
     implemented: true,
-    text: "같은 종류, 같은 숫자 시작의 순자를 2개 만듭니다.",
+    text: "같은 종류와 같은 숫자 시작의 슌쯔를 2개 만듭니다.",
     exampleTiles: "123m 123m 456p 789p 55s",
   },
   {
@@ -97,7 +97,7 @@ export const yakuDefinitions = [
     hanOpen: null,
     score: 24,
     implemented: true,
-    text: "같은 패 2장짜리 쌍을 7개 만드는 특수 형태입니다.",
+    text: "같은 패 2장짜리 짝을 7개 만드는 특수 형태입니다.",
     exampleTiles: "11m 44m 22p 55p 33s 77s CCz",
   },
   {
@@ -127,7 +127,7 @@ export const yakuDefinitions = [
     hanOpen: 1,
     score: 28,
     implemented: true,
-    text: "한 종류의 숫자패로 1-2-3, 4-5-6, 7-8-9를 모두 만듭니다.",
+    text: "한 종류의 수패로 1-2-3, 4-5-6, 7-8-9를 모두 만듭니다.",
     exampleTiles: "123m 456m 789m 111p 99s",
   },
   {
@@ -147,7 +147,7 @@ export const yakuDefinitions = [
     hanOpen: 2,
     score: 30,
     implemented: true,
-    text: "커쯔 3개를 만듭니다. 현재 MVP에서는 론/쯔모와 후로 정보 없이 커쯔 개수로 단순 판정합니다.",
+    text: "커쯔 3개를 만듭니다. 현재 버전에서는 론/쯔모와 후로 정보 없이 커쯔 개수로 단순 판정합니다.",
     exampleTiles: "111m 444p 555s 678m 22p",
   },
   {
@@ -167,7 +167,7 @@ export const yakuDefinitions = [
     hanOpen: 2,
     score: 36,
     implemented: true,
-    text: "모든 패가 1, 9 또는 자패로만 구성됩니다.",
+    text: "모든 패를 1, 9 또는 자패로만 구성합니다.",
     exampleTiles: "11m 99m 11p 99p 11s 99s EEz",
   },
   {
@@ -177,7 +177,7 @@ export const yakuDefinitions = [
     hanOpen: 1,
     score: 24,
     implemented: true,
-    text: "모든 몸통과 머리에 요구패가 포함되고, 순자가 1개 이상 있어야 합니다.",
+    text: "모든 몸통과 머리에 요구패가 포함되고, 슌쯔가 1개 이상 있어야 합니다.",
     exampleTiles: "123m 789m EEEz 999p SSz",
   },
   {
@@ -187,7 +187,7 @@ export const yakuDefinitions = [
     hanOpen: 2,
     score: 42,
     implemented: true,
-    text: "모든 몸통과 머리에 노두패가 포함되고, 자패 없이 순자가 1개 이상 있어야 합니다.",
+    text: "모든 몸통과 머리에 끝패가 포함되고, 자패 없이 슌쯔가 1개 이상 있어야 합니다.",
     exampleTiles: "123m 789m 111p 999p 99s",
   },
   {
@@ -217,7 +217,7 @@ export const yakuDefinitions = [
     hanOpen: 5,
     score: 80,
     implemented: true,
-    text: "한 종류의 숫자패만 사용합니다. 자패도 들어가면 안 됩니다.",
+    text: "한 종류의 숫자패만 사용합니다. 자패가 들어가면 성립하지 않습니다.",
     exampleTiles: "123p 456p 789p 234p 55p",
   },
   {
@@ -228,7 +228,7 @@ export const yakuDefinitions = [
     score: 160,
     yakuman: true,
     implemented: true,
-    text: "13종 요구패를 모두 모으고, 그중 하나를 한 쌍으로 만듭니다.",
+    text: "13종 요구패를 모두 모으고 그중 하나를 한 쌍으로 만듭니다.",
     exampleTiles: "19m 19p 19s ESWNPFCz 1m",
   },
   {
@@ -239,7 +239,7 @@ export const yakuDefinitions = [
     score: 160,
     yakuman: true,
     implemented: true,
-    text: "커쯔 4개를 만듭니다. 현재 MVP에서는 후로/론 정보 없이 커쯔 4개로 단순 판정합니다.",
+    text: "커쯔 4개를 만듭니다. 현재 버전에서는 후로/론 정보 없이 커쯔 4개로 단순 판정합니다.",
     exampleTiles: "111m 222p 333s CCCz 99m",
   },
   {
@@ -305,7 +305,7 @@ export const yakuDefinitions = [
     score: 160,
     yakuman: true,
     implemented: true,
-    text: "2, 3, 4, 6, 8삭과 발만 사용합니다.",
+    text: "삭수 2, 3, 4, 6, 8과 발만 사용합니다.",
     exampleTiles: "222s 333s 444s 666s FFz",
   },
   {
@@ -316,7 +316,7 @@ export const yakuDefinitions = [
     score: 160,
     yakuman: true,
     implemented: true,
-    text: "한 종류의 수패로 1112345678999 형태와 같은 색 추가 1장을 만듭니다.",
+    text: "한 종류의 수패로 1112345678999 형태와 같은 패 추가 1장을 만듭니다.",
     exampleTiles: "11123456789999m",
   },
 ];
@@ -345,5 +345,5 @@ export function createYaku(id) {
 function formatHan(item) {
   if (item.yakuman) return "역만";
   if (item.hanClosed === item.hanOpen || item.hanOpen == null) return `${item.hanClosed}판`;
-  return `문전 ${item.hanClosed}판 / 부로 ${item.hanOpen}판`;
+  return `멘젠 ${item.hanClosed}판 / 부로 ${item.hanOpen}판`;
 }

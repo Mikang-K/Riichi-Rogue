@@ -1,7 +1,7 @@
 [
   {
     "id": "tanyao-focus",
-    "name": "탕야오 단련",
+    "name": "탕야오 집중",
     "rarity": "common",
     "target": { "type": "yaku", "id": "tanyao" },
     "effect": { "type": "targetYakuScoreBonus", "score": 12 },
@@ -13,7 +13,7 @@
     "rarity": "common",
     "target": { "type": "yaku", "id": "pinfu" },
     "effect": { "type": "targetYakuMultiplierBonus", "multiplier": 0.25 },
-    "text": "핑후가 붙으면 역 배수 +0.25"
+    "text": "핑후가 붙으면 역 배율 +0.25"
   },
   {
     "id": "seven-pair-secret",
@@ -29,7 +29,7 @@
     "rarity": "legendary",
     "target": { "type": "yaku", "id": "chinitsu" },
     "effect": { "type": "targetYakuGlobalMultiplierBonus", "multiplier": 0.6 },
-    "text": "청일색이 붙으면 전체 배수 +0.6"
+    "text": "청일색이 붙으면 전체 배율 +0.6"
   },
   {
     "id": "five-manzu-tuning",
@@ -53,7 +53,7 @@
     "rarity": "rare",
     "target": { "type": "tileFace", "suit": "z", "value": "E" },
     "effect": { "type": "targetTileThresholdMultiplierBonus", "threshold": 2, "multiplier": 0.25 },
-    "text": "동이 2장 이상이면 패 배수 +0.25"
+    "text": "동이 2장 이상이면 패 배율 +0.25"
   },
   {
     "id": "honor-growth",
@@ -65,7 +65,7 @@
   },
   {
     "id": "terminal-edge",
-    "name": "노두패 칼날",
+    "name": "끝패 칼날",
     "rarity": "common",
     "target": { "type": "tileGroup", "group": "terminal" },
     "effect": { "type": "tileGroupScoreBonus", "scorePerTile": 3 },
@@ -77,6 +77,6 @@
     "rarity": "rare",
     "target": { "type": "tileGroup", "group": "simple" },
     "effect": { "type": "tileGroupThresholdMultiplierBonus", "threshold": 10, "multiplier": 0.35 },
-    "text": "2~8 수패가 10장 이상이면 패 배수 +0.35"
+    "text": "2~8 수패가 10장 이상이면 패 배율 +0.35"
   }
 ]

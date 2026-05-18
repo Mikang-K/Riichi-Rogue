@@ -11,12 +11,12 @@ export function renderYakuHelp(isOpen) {
         <div class="modal yaku-modal">
           <div class="modal-title">
             <div>
-              <span class="label">Reference</span>
-              <h2>리치마작 역 목록</h2>
+              <span class="label">참고</span>
+              <h2>역 목록</h2>
             </div>
-            <button class="icon-button" data-action="close-yaku" aria-label="역 목록 닫기">×</button>
+            <button class="icon-button" data-action="close-yaku" aria-label="역 목록 닫기">x</button>
           </div>
-          <p class="modal-note">역은 손패에 붙는 점수 조건입니다. 아래 목록은 현재 게임에서 실제로 판정되는 역입니다.</p>
+          <p class="modal-note">현재 게임에서 실제로 판정하는 역입니다. 각 역은 손패가 완성되었을 때 추가 점수를 줍니다.</p>
           <div class="yaku-list">
             ${yakuReference.map((item) => `
               <article class="yaku-item">
@@ -38,7 +38,7 @@ export function renderYakuHelp(isOpen) {
 function renderYakuExample(exampleTiles) {
   if (!exampleTiles) return "";
   return `
-    <div class="yaku-example-hand" aria-label="예시 패">
+    <div class="yaku-example-hand" aria-label="예시 손패">
       ${parseExampleTiles(exampleTiles).map((tile) => `
         <span class="yaku-example-tile" title="${tile.suit}${tile.value}">
           ${renderTileFace(tile)}
@@ -68,12 +68,12 @@ export function renderTermsHelp(isOpen) {
         <div class="modal terms-modal">
           <div class="modal-title">
             <div>
-              <span class="label">Glossary</span>
+              <span class="label">용어</span>
               <h2>마작 용어 설명</h2>
             </div>
-            <button class="icon-button" data-action="close-terms" aria-label="용어 설명 닫기">×</button>
+            <button class="icon-button" data-action="close-terms" aria-label="용어 설명 닫기">x</button>
           </div>
-          <p class="modal-note">마작을 처음 접해도 플레이 흐름을 따라갈 수 있도록, 이 게임에서 자주 나오는 용어만 먼저 정리했습니다.</p>
+          <p class="modal-note">처음 플레이해도 흐름을 따라갈 수 있도록 자주 나오는 용어만 정리했습니다.</p>
           <div class="term-list">
             ${termReference.map((item) => `
               <article class="term-item">
@@ -93,7 +93,7 @@ export function renderTutorialComplete(score) {
     <section class="overlay">
       <div class="modal">
         <h2>튜토리얼 완료</h2>
-        <p>${score.totalScore}점으로 연습국을 통과했습니다. 본 게임에서는 무작위 손패, 제한된 교환 횟수, 유물 보상으로 더 높은 목표 점수를 넘기면 됩니다.</p>
+        <p>${score.totalScore}점으로 연습국을 통과했습니다. 본 게임에서는 무작위 손패, 제한된 교환 횟수, 유물과 상점으로 더 높은 목표 점수를 넘기면 됩니다.</p>
         <button data-action="start-main">본 게임 시작</button>
       </div>
     </section>
@@ -109,7 +109,7 @@ export function renderReward(rewardOptions, title = "보상 선택", note = "") 
         <div class="reward-grid">
           ${rewardOptions.map((reward) => `
             <button class="reward reward-${reward.type ?? "relic"} relic-${reward.rarity ?? "common"}" data-reward-id="${reward.id}">
-              <small>${formatRewardType(reward.type)} · ${formatRarity(reward.rarity)}</small>
+              <small>${formatRewardType(reward.type)} - ${formatRarity(reward.rarity)}</small>
               <strong>${reward.name}</strong>
               <span>${reward.text}</span>
             </button>

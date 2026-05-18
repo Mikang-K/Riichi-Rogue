@@ -29,6 +29,7 @@ const requiredEffectFields = {
 };
 const requiredPlayerEffectFields = {
   maxDiscardsDelta: ["delta"],
+  shopEditLimitDelta: ["editType", "delta"],
 };
 
 const errors = [];

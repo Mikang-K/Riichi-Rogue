@@ -16,31 +16,31 @@ import { renderTutorialGuide } from "./tutorial.js";
 import { renderYakuHelp, renderTermsHelp, renderReward, renderEnd, renderTutorialComplete } from "./modal.js";
 import { renderTileFace } from "../../tileArt.js";
 import { renderMusicControl } from "./audio.js";
+import { renderShop } from "./shop.js";
 
 export function renderGameView(state, uiState) {
   const isTutorial = state.mode === "tutorial";
   const round = isTutorial ? tutorialRound : rounds[state.roundIndex] ?? rounds[rounds.length - 1];
+  const scoreContext = {
+    rinshan: state.kan?.rinshanReady === true,
+    kanCount: state.kan?.declaredCount ?? 0,
+    kanSets: state.kan?.sets ?? [],
+    augments: state.augments ?? [],
+    playerTiles: state.playerTiles ?? [],
+  };
   const score = scoreHand(
     getScoringTiles(state),
     state.doraState ?? state.dora,
     state.relics,
     state.riichi?.active
       ? {
+        ...scoreContext,
         riichi: true,
         includeUraDora: state.riichi.phase === "ready",
         riichiAttemptsUsed: state.riichi.attemptsUsed,
         discardsLeft: state.discardsLeft,
-        rinshan: state.kan?.rinshanReady === true,
-        kanCount: state.kan?.declaredCount ?? 0,
-        kanSets: state.kan?.sets ?? [],
-        augments: state.augments ?? [],
       }
-      : {
-        rinshan: state.kan?.rinshanReady === true,
-        kanCount: state.kan?.declaredCount ?? 0,
-        kanSets: state.kan?.sets ?? [],
-        augments: state.augments ?? [],
-      },
+      : scoreContext,
   );
 
   return `
@@ -60,8 +60,8 @@ function renderTopbar(round, score, isTutorial) {
   return `
     <header class="topbar">
       <div>
-        <p class="eyebrow">${isTutorial ? "Practice stage" : "Riichi roguelite MVP"}</p>
-        <h1>Riichi Rogue</h1>
+        <p class="eyebrow">${isTutorial ? "연습 모드" : "리치 로그라이트"}</p>
+        <h1>리치 로그</h1>
       </div>
       <div class="scorebox">
         <span>목표</span>
@@ -91,7 +91,7 @@ function renderStatusGrid(state, round) {
         <strong class="dora-tile">${renderDoraTiles(state)}</strong>
       </article>
       <article class="panel compact">
-        <span class="label">획득 점수</span>
+        <span class="label">코인</span>
         <strong>${state.coins}</strong>
       </article>
     </section>
@@ -122,7 +122,7 @@ function renderTable(state) {
         </div>
       </div>
       <div class="actions">
-        <button data-action="exchange" ${exchangeDisabled ? "disabled" : ""}>선택패 교환</button>
+        <button data-action="exchange" ${exchangeDisabled ? "disabled" : ""}>선택한 패 교환</button>
         <button data-action="declare-riichi"${waitTitle} ${riichiDisabled ? "disabled" : ""}>리치</button>
         ${state.riichi?.phase === "selectingDiscard" ? `<button class="secondary" data-action="cancel-riichi">리치 취소</button>` : ""}
         ${kanOptions.map((kan) => `<button data-action="declare-kan" data-kan-face="${kan.key}" title="${tileName(kan.tile)} 깡">깡</button>`).join("")}
@@ -151,7 +151,7 @@ function renderDoraTiles(state) {
 function renderKanSets(state) {
   const sets = state.kan?.sets ?? [];
   return `
-    <aside class="kan-area" aria-label="깡">
+    <aside class="kan-area" aria-label="깡 묶음">
       ${sets.map((set) => `
         <div class="kan-set" title="${set.tiles.map(tileName).join(", ")}">
           ${set.tiles.map((tile) => `<span class="kan-set-tile">${renderTileFace(tile)}</span>`).join("")}
@@ -171,7 +171,7 @@ function renderRiichiTrace(state) {
     <div class="riichi-trace" aria-live="polite">
       <span>리치 ${formatRiichiPhase(state.riichi.phase)}</span>
       ${discarded ? `<span class="riichi-trace-tile">버림 ${renderTileFace(discarded)}</span>` : ""}
-      ${drawn ? `<span class="riichi-trace-tile">신규 ${renderTileFace(drawn)}</span>` : ""}
+      ${drawn ? `<span class="riichi-trace-tile">새 패 ${renderTileFace(drawn)}</span>` : ""}
       ${waits ? `<small>대기 ${waits}</small>` : ""}
       ${candidates.length ? renderRiichiCandidates(candidates) : ""}
     </div>
@@ -223,8 +223,9 @@ function renderInfoGrid(state, score) {
 function renderOverlays(state, score, uiState) {
   return `
     ${state.status === "tutorialComplete" ? renderTutorialComplete(score) : ""}
-    ${state.status === "startReward" ? renderReward(state.rewardOptions, "시작 유물 선택", "이번 게임에서 첫 번째로 사용할 유물을 고르세요.") : ""}
-    ${state.status === "reward" ? renderReward(state.rewardOptions, "보상 선택", "라운드를 통과했습니다. 다음 라운드에 가져갈 유물을 하나 고르세요.") : ""}
+    ${state.status === "startReward" ? renderReward(state.rewardOptions, "시작 유물 선택", "이번 런에서 처음 사용할 유물을 하나 고르세요.") : ""}
+    ${state.status === "reward" ? renderReward(state.rewardOptions, "보상 선택", "라운드를 통과했습니다. 다음 라운드에 가져갈 보상을 고르세요.") : ""}
+    ${state.status === "shop" ? renderShop(state) : ""}
     ${state.status === "lost" || state.status === "won" ? renderEnd(state.status, state.message) : ""}
     ${renderYakuHelp(uiState.isYakuModalOpen)}
     ${renderTermsHelp(uiState.isTermsModalOpen)}
