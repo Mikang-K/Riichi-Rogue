@@ -100,14 +100,14 @@ function renderStatusGrid(state, round) {
 
 function renderTable(state) {
   const riichiState = getAvailableRiichi(state);
-  const kanOptions = getAvailableKans(state);
+  const isTutorial = state.mode === "tutorial";
+  const kanOptions = isTutorial ? [] : getAvailableKans(state);
   const kanCandidateKeys = new Set(kanOptions.map((kan) => kan.key));
   const riichiCandidates = state.riichi?.phase === "selectingDiscard" ? state.riichi.candidates : [];
   const exchangeDisabled = state.selected.length === 0 || state.discardsLeft === 0 || !canAct(state) || state.riichi?.active;
   const riichiDisabled = !riichiState.canRiichi;
   const submitDisabled = (state.status !== "playing" && state.status !== "tutorial")
     || (state.riichi?.active && state.riichi.phase !== "ready");
-  const isTutorial = state.mode === "tutorial";
   const waitTitle = riichiState.waits.length ? ` title="대기패: ${riichiState.waits.map(tileName).join(", ")}"` : "";
 
   return `
@@ -123,7 +123,7 @@ function renderTable(state) {
       </div>
       <div class="actions">
         <button data-action="exchange" ${exchangeDisabled ? "disabled" : ""}>선택한 패 교환</button>
-        <button data-action="declare-riichi"${waitTitle} ${riichiDisabled ? "disabled" : ""}>리치</button>
+        ${isTutorial ? "" : `<button data-action="declare-riichi"${waitTitle} ${riichiDisabled ? "disabled" : ""}>리치</button>`}
         ${state.riichi?.phase === "selectingDiscard" ? `<button class="secondary" data-action="cancel-riichi">리치 취소</button>` : ""}
         ${kanOptions.map((kan) => `<button data-action="declare-kan" data-kan-face="${kan.key}" title="${tileName(kan.tile)} 깡">깡</button>`).join("")}
         <button data-action="submit" ${submitDisabled ? "disabled" : ""}>조합 제출</button>

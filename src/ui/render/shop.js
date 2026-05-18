@@ -5,6 +5,7 @@ import { formatRarity } from "./score.js";
 export function renderShop(state) {
   const shop = state.shop;
   if (!shop) return "";
+  const isTutorial = state.mode === "tutorial";
 
   return `
     <section class="overlay">
@@ -12,11 +13,12 @@ export function renderShop(state) {
         <div class="modal-title">
           <div>
             <span class="label">상점</span>
-            <h2>라운드 사이 준비</h2>
+            <h2>${isTutorial ? "튜토리얼 상점" : "라운드 사이 준비"}</h2>
           </div>
           <strong class="shop-coins">${state.coins}코인</strong>
         </div>
         ${renderRewardSummary(shop)}
+        ${isTutorial ? `<p class="modal-note">왼쪽은 유물과 증강, 오른쪽은 패 편집입니다. 이번에는 오른쪽의 강화 후보 3개 중 하나를 선택해 보세요.</p>` : ""}
         <div class="shop-layout">
           <section class="shop-section">
             <h3>유물과 증강</h3>
@@ -37,7 +39,7 @@ export function renderShop(state) {
         </div>
         <p class="message">${state.message}</p>
         <div class="shop-actions">
-          <button data-action="leave-shop">다음 라운드</button>
+          <button data-action="leave-shop" ${isTutorial && !state.tutorial?.hasEditedTile ? "disabled" : ""}>${isTutorial ? "튜토리얼 완료" : "다음 라운드"}</button>
         </div>
       </div>
     </section>

@@ -41,6 +41,7 @@ const MAX_KAN_DECLARATIONS = 4;
 const ROUND_CLEAR_BASE_COINS = 4;
 const OVER_SCORE_PER_BONUS_COIN = 25;
 const MAX_OVER_SCORE_BONUS_COINS = 6;
+const TUTORIAL_CLEAR_COINS = 10;
 const STARTING_HAND_SIZE = 14;
 const BASE_SHOP_EDIT_LIMITS = {
   removeTile: 1,
@@ -118,27 +119,10 @@ export function newTitle() {
 }
 
 export function newTutorial() {
-  const hand = sortTiles([
-    fixedTile("m", 2, "t-1"),
-    fixedTile("m", 3, "t-2"),
-    fixedTile("m", 4, "t-3"),
-    fixedTile("p", 2, "t-4"),
-    fixedTile("p", 3, "t-5"),
-    fixedTile("p", 4, "t-6"),
-    fixedTile("s", 3, "t-7"),
-    fixedTile("s", 4, "t-8"),
-    fixedTile("s", 5, "t-9"),
-    fixedTile("m", 6, "t-10"),
-    fixedTile("m", 7, "t-11"),
-    fixedTile("m", 8, "t-12"),
-    fixedTile("p", 6, "t-13"),
-    fixedTile("z", "E", "tutorial-discard"),
-  ]);
-
   return {
     mode: "tutorial",
-    deck: [fixedTile("p", 6, "tutorial-draw")],
-    hand,
+    deck: [],
+    hand: [],
     selected: [],
     dora: fixedTile("m", 2, "tutorial-dora"),
     doraState: {
@@ -160,14 +144,21 @@ export function newTutorial() {
     maxDiscards: TUTORIAL_MAX_DISCARDS,
     discardsLeft: TUTORIAL_MAX_DISCARDS,
     riichi: emptyRiichiState(),
-    relics: [relicPool[0]],
+    relics: [],
     augments: [],
-    playerTiles: buildStartingPlayerTiles(),
+    playerTiles: buildTutorialPlayerTiles(),
     shop: null,
     shopEditLimits: { ...BASE_SHOP_EDIT_LIMITS },
     coins: 0,
-    status: "tutorial",
-    message: "연습 목표: 동을 선택해 교환하면 6통이 들어와 완료할 수 있습니다.",
+    status: "startReward",
+    rewardOptions: getTutorialStartRewardOptions(),
+    tutorial: {
+      step: "startReward",
+      hasVisitedShop: false,
+      hasEditedTile: false,
+      hasStartedNextRound: false,
+    },
+    message: "시작 유물을 하나 선택하세요. 유물은 런 동안 계속 효과를 줍니다.",
   };
 }
 
@@ -189,6 +180,57 @@ export function startRound(state) {
     status: "playing",
     message: `${rounds[state.roundIndex].name} 시작.`,
   };
+}
+
+function startTutorialRound(state, message = "연습국 시작. 손패에서 동을 선택해 교환해 보세요.") {
+  return {
+    ...state,
+    mode: "tutorial",
+    deck: [fixedTile("p", 6, "tutorial-draw")],
+    hand: getTutorialHand(),
+    selected: [],
+    dora: fixedTile("m", 2, "tutorial-dora"),
+    doraState: {
+      indicators: [fixedTile("m", 2, "tutorial-dora")],
+      uraIndicators: [fixedTile("p", 6, "tutorial-ura-dora")],
+      revealedCount: 1,
+    },
+    deadWall: {
+      rinshanTiles: [
+        fixedTile("m", 1, "tutorial-rinshan-1"),
+        fixedTile("m", 9, "tutorial-rinshan-2"),
+        fixedTile("s", 1, "tutorial-rinshan-3"),
+        fixedTile("s", 9, "tutorial-rinshan-4"),
+      ],
+      drawsUsed: 0,
+    },
+    kan: emptyKanState(),
+    roundIndex: 0,
+    maxDiscards: state.maxDiscards,
+    discardsLeft: state.maxDiscards,
+    riichi: emptyRiichiState(),
+    status: "tutorial",
+    message,
+  };
+}
+
+function getTutorialHand() {
+  return sortTiles([
+    fixedTile("m", 2, "t-1"),
+    fixedTile("m", 3, "t-2"),
+    fixedTile("m", 4, "t-3"),
+    fixedTile("p", 2, "t-4"),
+    fixedTile("p", 3, "t-5"),
+    fixedTile("p", 4, "t-6"),
+    fixedTile("s", 3, "t-7"),
+    fixedTile("s", 4, "t-8"),
+    fixedTile("s", 5, "t-9"),
+    fixedTile("m", 6, "t-10"),
+    fixedTile("m", 7, "t-11"),
+    fixedTile("m", 8, "t-12"),
+    fixedTile("p", 6, "t-13"),
+    fixedTile("z", "E", "tutorial-discard"),
+  ]);
 }
 
 export function toggleTile(state, tileId) {
@@ -413,11 +455,20 @@ function finishScoredHand(state, result, successMessage = null) {
   }
 
   if (state.mode === "tutorial") {
+    const coinReward = getTutorialClearCoins(result.totalScore, targetScore);
     return {
       ...state,
-      status: "tutorialComplete",
+      status: "shop",
+      coins: state.coins + coinReward.totalCoins,
       selected: [],
-      message: `${result.totalScore}점으로 연습 성공! 이제 본 게임으로 들어갈 수 있습니다.`,
+      rewardOptions: [],
+      shop: createTutorialShopState(state, result, targetScore, coinReward),
+      tutorial: {
+        ...(state.tutorial ?? {}),
+        step: "shopIntro",
+        hasVisitedShop: true,
+      },
+      message: `${result.totalScore}점으로 연습국을 통과했습니다. ${coinReward.totalCoins}코인을 받고 상점에 들어왔습니다.`,
     };
   }
 
@@ -459,6 +510,18 @@ function chooseRelicReward(state, relic) {
   const playerState = applyRelicPlayerEffect(state, relic);
 
   if (state.status === "startReward") {
+    if (state.mode === "tutorial") {
+      return startTutorialRound({
+        ...playerState,
+        relics: [relic],
+        rewardOptions: [],
+        tutorial: {
+          ...(state.tutorial ?? {}),
+          step: "selectDiscard",
+        },
+      }, `${relic.name}을 선택했습니다. 이제 손패에서 동을 선택해 교환해 보세요.`);
+    }
+
     return {
       ...playerState,
       relics: [relic],
@@ -581,19 +644,39 @@ export function buyTileUpgrade(state, offerId) {
   const tile = (state.playerTiles ?? []).find((item) => item.copyId === offer.tile.copyId);
   if (!tile) return state;
   const nextEnhancement = combineEnhancement(tile.enhancement, upgrade);
-  return markShopOfferSold({
+  const nextState = markShopOfferSold({
     ...state,
     coins: state.coins - offer.price,
     playerTiles: state.playerTiles.map((item) =>
       item.copyId === offer.tile.copyId ? { ...item, enhancement: nextEnhancement } : item,
     ),
     shop: useShopEdit(state.shop, "upgradeTile"),
-    message: `${tileName(tile)}을 강화했습니다.`,
+    tutorial: state.mode === "tutorial"
+      ? { ...(state.tutorial ?? {}), step: "nextRound", hasEditedTile: true }
+      : state.tutorial,
+    message: state.mode === "tutorial"
+      ? `${tileName(tile)}을 강화했습니다. 이제 다음 라운드 버튼을 눌러 튜토리얼을 마무리하세요.`
+      : `${tileName(tile)}을 강화했습니다.`,
   }, offerId);
+  return nextState;
 }
 
 export function leaveShop(state) {
   if (state.status !== "shop") return state;
+  if (state.mode === "tutorial") {
+    return {
+      ...state,
+      selected: [],
+      shop: null,
+      status: "tutorialComplete",
+      tutorial: {
+        ...(state.tutorial ?? {}),
+        step: "complete",
+        hasStartedNextRound: true,
+      },
+      message: "튜토리얼 완료. 이제 본 게임에서 이 흐름을 반복해 오라스까지 완주해 보세요.",
+    };
+  }
   return startRound({
     ...state,
     roundIndex: state.roundIndex + 1,
@@ -846,6 +929,15 @@ function getRoundClearCoins(totalScore, targetScore) {
   };
 }
 
+function getTutorialClearCoins(totalScore, targetScore) {
+  return {
+    baseCoins: TUTORIAL_CLEAR_COINS,
+    bonusCoins: 0,
+    totalCoins: TUTORIAL_CLEAR_COINS,
+    overScore: Math.max(0, totalScore - targetScore),
+  };
+}
+
 function buildDeck() {
   const faces = [
     ...SUITS.flatMap((suit) => Array.from({ length: 9 }, (_, index) => ({ suit, value: index + 1 }))),
@@ -864,6 +956,17 @@ function buildStartingPlayerTiles() {
     ...tile,
     copyId: `player-${tile.copyId}`,
   }));
+}
+
+function buildTutorialPlayerTiles() {
+  const faces = [
+    ["m", 2], ["m", 2], ["m", 3], ["m", 3], ["m", 4], ["m", 4],
+    ["m", 6], ["m", 7], ["m", 8],
+    ["p", 2], ["p", 3], ["p", 4], ["p", 6], ["p", 6],
+    ["s", 3], ["s", 4], ["s", 5], ["s", 9],
+    ["z", "E"], ["z", "S"], ["z", "P"], ["z", "F"],
+  ];
+  return faces.map(([suit, value], index) => createPlayerTile(suit, value, `tutorial-player-${index}`));
 }
 
 function createRoundDeal(playerTiles) {
@@ -1005,6 +1108,10 @@ function getStartRewardOptions() {
   return getRelicRewardOptions([], 3);
 }
 
+function getTutorialStartRewardOptions() {
+  return getRelicRewardOptionsById(["bamboo-lens", "dora-bell", "pair-coin"], []);
+}
+
 function getRewardOptions(state) {
   return [
     ...getRelicRewardOptions(state.relics ?? [], 1),
@@ -1026,6 +1133,22 @@ function getAugmentRewardOptions(currentAugments, count) {
   );
 }
 
+function getRelicRewardOptionsById(ids, currentRelics) {
+  const owned = new Set(currentRelics.map((relic) => relic.id));
+  return ids
+    .map((id) => relicPool.find((relic) => relic.id === id))
+    .filter((relic) => relic && !owned.has(relic.id))
+    .map((item) => createRewardOption("relic", item));
+}
+
+function getAugmentRewardOptionsById(ids, currentAugments) {
+  const owned = new Set(currentAugments.map((augment) => augment.id));
+  return ids
+    .map((id) => augmentPool.find((augment) => augment.id === id))
+    .filter((augment) => augment && !owned.has(augment.id))
+    .map((item) => createRewardOption("augment", item));
+}
+
 function createShopState(state, result, targetScore, coinReward) {
   return {
     roundIndex: state.roundIndex,
@@ -1038,6 +1161,41 @@ function createShopState(state, result, targetScore, coinReward) {
       tileUpgrades: createTileUpgradeOffers(state.playerTiles ?? [], 3),
       tileAdds: createTileAddOffers(state.playerTiles ?? [], 3),
       tileRemoves: createTileRemoveOffers(state.playerTiles ?? [], 3),
+    },
+    editsUsed: {
+      removeTile: 0,
+      addTile: 0,
+      upgradeTile: 0,
+    },
+    editsLimit: { ...(state.shopEditLimits ?? BASE_SHOP_EDIT_LIMITS) },
+  };
+}
+
+function createTutorialShopState(state, result, targetScore, coinReward) {
+  const playerTiles = state.playerTiles ?? buildTutorialPlayerTiles();
+  return {
+    roundIndex: state.roundIndex,
+    lastScore: result.totalScore,
+    lastTargetScore: targetScore,
+    lastReward: coinReward,
+    offers: {
+      relics: getRelicRewardOptionsById(["spare-wall"], state.relics ?? []).map(createShopOffer),
+      augments: getAugmentRewardOptionsById(["five-manzu-tuning"], state.augments ?? []).map(createShopOffer),
+      tileUpgrades: createFixedTileOffers(playerTiles, [
+        ["p", 6],
+        ["m", 2],
+        ["z", "P"],
+      ], "tileUpgrade"),
+      tileAdds: createFixedTileOffers(playerTiles, [
+        ["p", 6],
+        ["m", 3],
+        ["m", 4],
+      ], "tileAdd"),
+      tileRemoves: createFixedTileOffers(playerTiles, [
+        ["z", "E"],
+        ["z", "S"],
+        ["s", 9],
+      ], "tileRemove"),
     },
     editsUsed: {
       removeTile: 0,
@@ -1067,6 +1225,58 @@ function createTileAddOffers(playerTiles, count) {
     price: SHOP_PRICES.tileAdd,
     sold: false,
   }));
+}
+
+function createFixedTileOffers(playerTiles, faces, type) {
+  return faces
+    .map(([suit, value]) => findPlayerTile(playerTiles, suit, value))
+    .filter(Boolean)
+    .map((tile, index) => createTileEditOffer(tile, index, type));
+}
+
+function createTileEditOffer(tile, index, type) {
+  if (type === "tileUpgrade") {
+    const upgrade = TILE_UPGRADES[index % TILE_UPGRADES.length];
+    return {
+      id: `tile-upgrade-${tile.suit}${tile.value}-${index}-${crypto.randomUUID()}`,
+      type: "tileUpgrade",
+      name: `${tileName(tile)} 강화`,
+      text: upgrade.text,
+      rarity: "common",
+      tile,
+      upgrade,
+      price: SHOP_PRICES.tileUpgrade,
+      sold: false,
+    };
+  }
+
+  if (type === "tileAdd") {
+    return {
+      id: `tile-add-${tile.suit}${tile.value}-${index}-${crypto.randomUUID()}`,
+      type: "tileAdd",
+      name: `${tileName(tile)} 추가`,
+      text: "현재 패 풀에 이 패의 복사본을 1장 추가합니다.",
+      rarity: "common",
+      tile,
+      price: SHOP_PRICES.tileAdd,
+      sold: false,
+    };
+  }
+
+  return {
+    id: `tile-remove-${tile.suit}${tile.value}-${index}-${crypto.randomUUID()}`,
+    type: "tileRemove",
+    name: `${tileName(tile)} 삭제`,
+    text: "현재 패 풀에서 이 패를 1장 삭제합니다.",
+    rarity: "common",
+    tile,
+    price: SHOP_PRICES.tileRemove,
+    sold: false,
+  };
+}
+
+function findPlayerTile(playerTiles, suit, value) {
+  return playerTiles.find((tile) => tile.suit === suit && tile.value === value);
 }
 
 function createTileUpgradeOffers(playerTiles, count) {

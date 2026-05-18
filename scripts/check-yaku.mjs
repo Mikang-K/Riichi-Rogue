@@ -47,7 +47,8 @@ cases.forEach((testCase) => {
   assertExcludes(testCase.name, yakuNames, testCase.excludes ?? []);
 });
 
-const tutorial = newTutorial();
+const tutorialStart = newTutorial();
+const tutorial = chooseReward(tutorialStart, tutorialStart.rewardOptions[0].id);
 const discardedEast = {
   ...tutorial,
   selected: ["tutorial-discard"],
