@@ -14,9 +14,12 @@ import {
   leaveShop,
 } from "../game.js";
 import { playSfx, startBackgroundMusic, toggleBackgroundMusic } from "./audio.js";
+import { escapeHtml, getTermDefinition } from "./render/terms.js";
 
 export function initEvents({ getState, setState, getUiState, setUiState, rerender }) {
   let riichiTimer = null;
+  let activeTermTrigger = null;
+  let termTooltip = null;
 
   function clearRiichiTimer() {
     if (!riichiTimer) return;
@@ -35,13 +38,73 @@ export function initEvents({ getState, setState, getUiState, setUiState, rerende
     }, 450);
   }
 
-  document.querySelector("#app").addEventListener("click", (e) => {
+  function ensureTermTooltip() {
+    if (termTooltip) return termTooltip;
+    termTooltip = document.createElement("div");
+    termTooltip.className = "term-floating-tooltip";
+    termTooltip.setAttribute("role", "tooltip");
+    document.body.append(termTooltip);
+    return termTooltip;
+  }
+
+  function showTermTooltip(trigger) {
+    const term = getTermDefinition(trigger.dataset.termName);
+    if (!term) return;
+    activeTermTrigger = trigger;
+    const tooltip = ensureTermTooltip();
+    tooltip.innerHTML = `
+      <strong>${escapeHtml(term.name)}</strong>
+      <span>${escapeHtml(term.text)}</span>
+    `;
+    tooltip.classList.add("is-visible");
+    positionTermTooltip(trigger);
+  }
+
+  function positionTermTooltip(trigger) {
+    if (!termTooltip) return;
+    const rect = trigger.getBoundingClientRect();
+    const tooltipRect = termTooltip.getBoundingClientRect();
+    const gap = 10;
+    const margin = 12;
+    const maxLeft = window.innerWidth - tooltipRect.width - margin;
+    const left = Math.max(margin, Math.min(maxLeft, rect.left + rect.width / 2 - tooltipRect.width / 2));
+    const topAbove = rect.top - tooltipRect.height - gap;
+    const top = topAbove > margin ? topAbove : rect.bottom + gap;
+    termTooltip.style.left = `${left}px`;
+    termTooltip.style.top = `${top}px`;
+  }
+
+  function hideTermTooltip() {
+    activeTermTrigger = null;
+    termTooltip?.classList.remove("is-visible");
+  }
+
+  const app = document.querySelector("#app");
+
+  app.addEventListener("pointerover", (e) => {
+    const trigger = e.target.closest("[data-term-name]");
+    if (!trigger || !app.contains(trigger)) return;
+    showTermTooltip(trigger);
+  });
+
+  app.addEventListener("pointerout", (e) => {
+    const trigger = e.target.closest("[data-term-name]");
+    if (!trigger || trigger !== activeTermTrigger || trigger.contains(e.relatedTarget)) return;
+    hideTermTooltip();
+  });
+
+  window.addEventListener("resize", hideTermTooltip);
+  document.addEventListener("scroll", hideTermTooltip, true);
+
+  app.addEventListener("click", (e) => {
+    hideTermTooltip();
     const action = e.target.closest("[data-action]")?.dataset.action;
     const tileId = e.target.closest("[data-tile]")?.dataset.tile;
     const rewardId = e.target.closest("[data-reward-id]")?.dataset.rewardId;
     const relicId = e.target.closest("[data-relic]")?.dataset.relic;
     const kanFace = e.target.closest("[data-kan-face]")?.dataset.kanFace;
     const shopOfferId = e.target.closest("[data-shop-offer-id]")?.dataset.shopOfferId;
+    const yakuPage = e.target.closest("[data-yaku-page]")?.dataset.yakuPage;
     const uiState = getUiState();
 
     if (action !== "toggle-music") {
@@ -133,11 +196,15 @@ export function initEvents({ getState, setState, getUiState, setUiState, rerende
         rerender();
         break;
       case "open-yaku":
-        setUiState({ isYakuModalOpen: true });
+        setUiState({ isYakuModalOpen: true, yakuHelpPage: "standard" });
         rerender();
         break;
       case "close-yaku":
         setUiState({ isYakuModalOpen: false });
+        rerender();
+        break;
+      case "set-yaku-page":
+        setUiState({ yakuHelpPage: yakuPage ?? "standard" });
         rerender();
         break;
       case "open-terms":

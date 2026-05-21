@@ -1,3 +1,5 @@
+import { renderTermText } from "./terms.js";
+
 const tutorialSteps = [
   {
     id: "startReward",
@@ -53,8 +55,8 @@ export function renderTutorialCoach(state, score) {
     <aside class="tutorial-coach-overlay" aria-live="polite">
       <div class="tutorial-coach-card">
         <span class="label">튜토리얼 ${progress}</span>
-        <h2>${meta.title}</h2>
-        <p>${getTutorialBody(state, score, meta)}</p>
+        <h2>${renderTermText(meta.title)}</h2>
+        <p>${renderTermText(getTutorialBody(state, score, meta))}</p>
       </div>
     </aside>
   `;

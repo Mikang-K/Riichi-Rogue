@@ -322,13 +322,16 @@ export const yakuDefinitions = [
 ];
 
 export const yakuById = new Map(yakuDefinitions.map((item) => [item.id, item]));
-export const yakuReference = yakuDefinitions.filter((item) => item.implemented).map((item) => ({
-  name: item.name,
-  han: formatHan(item),
-  score: item.score,
-  text: item.text,
-  exampleTiles: item.exampleTiles,
-}));
+export const yakuReference = yakuDefinitions
+  .filter((item) => item.implemented)
+  .sort(compareYakuReference)
+  .map((item) => ({
+    name: item.name,
+    han: formatHan(item),
+    score: item.score,
+    text: item.text,
+    exampleTiles: item.exampleTiles,
+  }));
 
 export function createYaku(id) {
   const definition = yakuById.get(id);
@@ -346,4 +349,15 @@ function formatHan(item) {
   if (item.yakuman) return "역만";
   if (item.hanClosed === item.hanOpen || item.hanOpen == null) return `${item.hanClosed}판`;
   return `멘젠 ${item.hanClosed}판 / 부로 ${item.hanOpen}판`;
+}
+
+function compareYakuReference(a, b) {
+  return getSortHan(a) - getSortHan(b)
+    || a.score - b.score
+    || a.name.localeCompare(b.name, "ko");
+}
+
+function getSortHan(item) {
+  if (item.yakuman) return 13;
+  return Math.min(item.hanClosed, item.hanOpen ?? item.hanClosed);
 }

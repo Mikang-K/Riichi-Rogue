@@ -3,6 +3,7 @@ import { augmentPool, augmentRarities } from "./game/augments.js";
 import { formatWaits, getRiichiState, isRiichiWinningHand } from "./game/riichi.js";
 import { relicPool, relicRarities } from "./game/relics.js";
 import { evaluateYaku } from "./game/yaku-evaluator.js";
+import { createRogueYaku } from "./game/rogue-yaku-data.js";
 import { HONORS, SUITS, countTiles, sameFace, sortTiles } from "./game/tile-utils.js";
 
 export { augmentPool, augmentRarities, relicPool, relicRarities };
@@ -776,36 +777,15 @@ function evaluateRogueYaku(tiles, analysis, context = {}) {
   const playerTileCount = context.playerTiles?.length ?? null;
 
   if (highestDuplicate >= 5) {
-    results.push({
-      id: "rogue-fivefold-face",
-      name: "오중 울림",
-      han: 2,
-      score: 28,
-      text: "완성 손패에 같은 얼굴의 패가 5장 이상 있습니다.",
-      rogue: true,
-    });
+    results.push(createRogueYaku("rogue-fivefold-face"));
   }
 
   if (highestDuplicate >= 6) {
-    results.push({
-      id: "rogue-sixfold-face",
-      name: "육중 울림",
-      han: 3,
-      score: 42,
-      text: "완성 손패에 같은 얼굴의 패가 6장 이상 있습니다.",
-      rogue: true,
-    });
+    results.push(createRogueYaku("rogue-sixfold-face"));
   }
 
   if (playerTileCount !== null && playerTileCount < STARTING_HAND_SIZE) {
-    results.push({
-      id: "rogue-thin-wall",
-      name: "얇은 패산",
-      han: 1,
-      score: 16,
-      text: "플레이어 패 풀이 14장보다 적은 상태에서 승리했습니다.",
-      rogue: true,
-    });
+    results.push(createRogueYaku("rogue-thin-wall"));
   }
 
   return results;
@@ -970,24 +950,17 @@ function buildTutorialPlayerTiles() {
 }
 
 function createRoundDeal(playerTiles) {
-  const wall = setupWall();
+  const wall = setupWall(playerTiles);
   return {
     deck: wall.liveWall,
-    hand: sortTiles(drawPlayerHand(playerTiles, STARTING_HAND_SIZE)),
+    hand: drawRoundHand(wall.liveWall, STARTING_HAND_SIZE),
     doraState: wall.doraState,
     deadWall: wall.deadWall,
   };
 }
 
-function drawPlayerHand(playerTiles, count) {
-  const source = playerTiles?.length ? playerTiles : buildStartingPlayerTiles();
-  const shuffled = shuffle(source);
-  const hand = [];
-  for (let index = 0; index < count; index += 1) {
-    const base = index < shuffled.length ? shuffled[index] : source[Math.floor(Math.random() * source.length)];
-    hand.push(cloneTileForRound(base, "hand"));
-  }
-  return hand;
+function drawRoundHand(deck, count) {
+  return sortTiles(draw(deck, count));
 }
 
 function cloneTileForRound(tile, prefix) {
@@ -1008,8 +981,9 @@ function createPlayerTile(suit, value, prefix = "player", enhancement = undefine
   };
 }
 
-function setupWall() {
-  const deck = shuffle(buildDeck());
+function setupWall(playerTiles) {
+  const source = playerTiles?.length ? playerTiles : buildStartingPlayerTiles();
+  const deck = shuffle(source.map((tile) => cloneTileForRound(tile, "wall")));
   const doraState = {
     indicators: draw(deck, 5),
     uraIndicators: draw(deck, 5),
