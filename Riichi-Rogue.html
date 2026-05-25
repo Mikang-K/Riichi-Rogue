@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Riichi Rogue 기획서</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 16mm 14mm 18mm;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #f4f0e8;
+      color: #1e2a22;
+      font-family: "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", Arial, sans-serif;
+      font-size: 10.5pt;
+      line-height: 1.58;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: 32pt;
+      line-height: 1.12;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      margin: 0 0 10px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #c8963c;
+      color: #213b2b;
+      font-size: 18pt;
+      line-height: 1.25;
+    }
+
+    h3 {
+      margin: 16px 0 8px;
+      color: #314d38;
+      font-size: 12.5pt;
+    }
+
+    p {
+      margin-bottom: 8px;
+    }
+
+    table {
+      width: 100%;
+      margin: 8px 0 14px;
+      border-collapse: collapse;
+      page-break-inside: avoid;
+      font-size: 9.2pt;
+    }
+
+    th,
+    td {
+      padding: 7px 8px;
+      border: 1px solid #d9d1c1;
+      vertical-align: top;
+    }
+
+    th {
+      background: #efe2c8;
+      color: #223729;
+      font-weight: 800;
+    }
+
+    ul,
+    ol {
+      margin: 6px 0 12px 18px;
+      padding: 0;
+    }
+
+    li {
+      margin-bottom: 4px;
+    }
+
+    .page {
+      page-break-after: always;
+    }
+
+    .page:last-child {
+      page-break-after: auto;
+    }
+
+    .cover {
+      display: grid;
+      min-height: 260mm;
+      padding: 28mm 18mm 18mm;
+      background:
+        linear-gradient(135deg, rgba(33, 59, 43, 0.92), rgba(30, 42, 34, 0.82)),
+        #213b2b;
+      color: #fbf5e8;
+    }
+
+    .cover-inner {
+      align-self: center;
+    }
+
+    .eyebrow {
+      margin-bottom: 14px;
+      color: #f3c161;
+      font-size: 10pt;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .subtitle {
+      max-width: 620px;
+      margin-top: 18px;
+      color: #efe7d5;
+      font-size: 15pt;
+      line-height: 1.45;
+      font-weight: 700;
+    }
+
+    .cover-meta {
+      align-self: end;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 36px;
+    }
+
+    .meta-box {
+      min-height: 66px;
+      padding: 10px;
+      border: 1px solid rgba(243, 193, 97, 0.5);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .meta-box span {
+      display: block;
+      margin-bottom: 4px;
+      color: #f3c161;
+      font-size: 8.5pt;
+      font-weight: 900;
+    }
+
+    .meta-box strong {
+      font-size: 10pt;
+    }
+
+    .section {
+      padding: 2mm 0;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 12px 0 16px;
+    }
+
+    .card {
+      padding: 12px;
+      border: 1px solid #d7c9ad;
+      border-left: 4px solid #c8963c;
+      background: #fbf8f0;
+      page-break-inside: avoid;
+    }
+
+    .card strong {
+      display: block;
+      margin-bottom: 4px;
+      color: #213b2b;
+      font-size: 11pt;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      margin: 10px 0 14px;
+      page-break-inside: avoid;
+    }
+
+    .flow span {
+      min-height: 44px;
+      padding: 8px 6px;
+      border: 1px solid #d7c9ad;
+      background: #fffaf0;
+      color: #213b2b;
+      text-align: center;
+      font-weight: 800;
+    }
+
+    .formula {
+      margin: 10px 0 12px;
+      padding: 12px;
+      border: 1px solid #d7c9ad;
+      background: #fffaf0;
+      color: #203225;
+      font-family: Consolas, "Malgun Gothic", monospace;
+      font-size: 9.5pt;
+      page-break-inside: avoid;
+    }
+
+    .note {
+      padding: 10px 12px;
+      border-left: 4px solid #4d795a;
+      background: #eef4eb;
+      color: #243a2a;
+      page-break-inside: avoid;
+    }
+
+    .two-column {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .small {
+      font-size: 8.8pt;
+    }
+
+    .footer-note {
+      margin-top: 12px;
+      color: #6d6254;
+      font-size: 8.6pt;
+    }
+  </style>
+</head>
+<body>
+  <section class="cover page">
+    <div class="cover-inner">
+      <p class="eyebrow">Game Design Document</p>
+      <h1>Riichi Rogue<br>기획서</h1>
+      <p class="subtitle">리치 마작의 손패 조합과 로그라이트식 점수 빌드를 결합한 싱글 페이지 브라우저 게임 프로토타입</p>
+    </div>
+    <div class="cover-meta">
+      <div class="meta-box">
+        <span>문서 버전</span>
+        <strong>현재 프로젝트 기준</strong>
+      </div>
+      <div class="meta-box">
+        <span>작성일</span>
+        <strong>2026.05.25</strong>
+      </div>
+      <div class="meta-box">
+        <span>구현 상태</span>
+        <strong>플레이 가능한 MVP</strong>
+      </div>
+    </div>
+  </section>
+
+  <section class="page section">
+    <h2>1. 프로젝트 개요</h2>
+    <p><strong>Riichi Rogue</strong>는 리치 마작의 패 조합 규칙을 기반으로, 매 라운드 목표 점수를 돌파하고 보상을 누적하는 로그라이트식 점수 빌드 게임이다. 전통적인 마작의 완성형과 역 만들기를 핵심 재미로 유지하면서, 미완성 손패도 패 점수와 유물 보너스로 의미 있는 선택지가 되도록 설계했다.</p>
+    <p>현재 프로젝트는 Vanilla JavaScript, HTML, CSS로 구현된 브라우저 게임 MVP이며, 타이틀 화면, 튜토리얼, 본 게임 5라운드, 실시간 점수 계산, 리치, 깡, 도라, 유물, 증강, 상점, 패 풀 편집을 포함한다.</p>
+
+    <table>
+      <tr><th>항목</th><th>내용</th></tr>
+      <tr><td>프로젝트 유형</td><td>싱글 페이지 브라우저 게임</td></tr>
+      <tr><td>장르</td><td>리치 마작 기반 로그라이트 점수 빌드</td></tr>
+      <tr><td>핵심 대상</td><td>마작의 조합 사고를 좋아하지만 짧은 세션과 성장 선택을 원하는 플레이어</td></tr>
+      <tr><td>핵심 경험</td><td>손패 판단, 제한된 교환, 목표 점수 돌파, 보상 선택, 패 풀 성장</td></tr>
+      <tr><td>기술 구성</td><td>Vite, Vanilla JavaScript ES Modules, HTML, CSS, PNG 마작패 자산</td></tr>
+    </table>
+
+    <div class="summary-grid">
+      <div class="card">
+        <strong>기획 키워드</strong>
+        <p>마작 조합, 점수 엔진, 로그라이트 보상, 덱 빌딩, 짧은 라운드, 누적 성장</p>
+      </div>
+      <div class="card">
+        <strong>차별점</strong>
+        <p>화료 실패를 즉시 무가치하게 만들지 않고, 패 자체의 점수와 성장 요소로 대체 빌드가 가능하게 만든다.</p>
+      </div>
+    </div>
+
+    <h3>기획 의도</h3>
+    <p>일반적인 리치 마작은 정해진 완성 형태와 역을 만드는 데 집중한다. Riichi Rogue는 이 구조를 짧은 로그라이트 세션에 맞춰 재해석한다. 플레이어는 매 라운드 현재 손패, 남은 교환 횟수, 도라, 유물, 증강, 패 풀 구성을 보고 목표 점수를 넘길 수 있는 가장 높은 기대값의 선택을 찾는다.</p>
+    <p class="note">핵심 설계 원칙은 “완성 손패는 크게 보상하고, 미완성 손패도 성장 경로 안에서는 의미 있게 만든다”이다.</p>
+  </section>
+
+  <section class="page section">
+    <h2>2. 게임 목표와 플레이 흐름</h2>
+    <h3>플레이 목표</h3>
+    <p>플레이어는 5개 라운드의 목표 점수를 순서대로 돌파해 최종 라운드인 오라스를 통과해야 한다. 각 라운드에서는 14장의 손패와 도라 표시패를 바탕으로 제한된 교환을 수행하고, 현재 점수가 목표 이상일 때 조합을 제출한다.</p>
+
+    <table>
+      <tr><th>라운드</th><th>목표 점수</th><th>의도</th></tr>
+      <tr><td>동 1국</td><td>80점</td><td>초기 유물과 기본 손패만으로 돌파 가능한 입문 구간</td></tr>
+      <tr><td>동 2국</td><td>105점</td><td>유물 효과와 간단한 역 완성이 중요해지는 구간</td></tr>
+      <tr><td>동 3국</td><td>130점</td><td>상점 편집과 증강 선택의 누적 효과를 요구</td></tr>
+      <tr><td>남입</td><td>165점</td><td>배율, 리치, 도라, 고점 역의 조합을 유도</td></tr>
+      <tr><td>오라스</td><td>210점</td><td>런 전체 빌드 완성도를 검증하는 최종 구간</td></tr>
+    </table>
+
+    <h3>핵심 루프</h3>
+    <div class="flow">
+      <span>시작 유물 선택</span>
+      <span>손패 확인</span>
+      <span>교환, 리치, 깡 판단</span>
+      <span>조합 제출</span>
+      <span>상점 성장</span>
+    </div>
+    <p>본 게임은 시작 시 유물 3개 중 1개를 선택한 뒤 1라운드에 진입한다. 라운드 성공 시 코인을 받고 상점에 들어가며, 상점에서는 유물, 증강, 패 강화, 패 추가, 패 삭제를 구매한다. 다음 라운드는 편집된 플레이어 패 풀에서 다시 손패를 구성한다.</p>
+
+    <h3>실패와 성공</h3>
+    <ul>
+      <li>목표 점수 미달 상태에서 제출하면 본 게임은 실패 상태로 종료된다.</li>
+      <li>튜토리얼에서는 실패 종료 대신 안내 메시지를 통해 다시 시도하도록 유도한다.</li>
+      <li>최종 라운드 통과 시 완주 성공으로 종료된다.</li>
+      <li>라운드 통과 보상 코인은 기본 4개에 초과 점수 보너스를 더해 지급한다.</li>
+    </ul>
+  </section>
+
+  <section class="page section">
+    <h2>3. 핵심 시스템 설계</h2>
+    <h3>손패와 패 풀</h3>
+    <p>게임은 전통적인 마작패 얼굴을 사용하지만, 로그라이트 성장을 위해 플레이어 전용 패 풀을 별도로 운용한다. 상점에서 패를 강화, 추가, 삭제하면 다음 라운드 이후의 손패 구성 확률과 점수 기대값이 바뀐다.</p>
+    <ul>
+      <li>기본 손패 크기: 14장</li>
+      <li>본 게임 기본 교환 횟수: 10회</li>
+      <li>튜토리얼 교환 횟수: 1회</li>
+      <li>패 강화: 선택한 패의 기본 점수에 +3 또는 +5 보너스 부여</li>
+      <li>패 추가/삭제: 플레이어 패 풀의 실제 후보 수를 조정</li>
+    </ul>
+
+    <h3>손패 분석</h3>
+    <p>손패 분석은 일반 완성형과 특수 완성형을 모두 다룬다. 일반 완성형은 몸통 4개와 머리 1개를 기준으로 하며, 몸통은 슌쯔 또는 커쯔로 구성된다. 칠대자, 국사무쌍 등 별도 형태도 역 판정에 포함된다.</p>
+
+    <h3>점수 계산</h3>
+    <p>점수는 패 점수 계열과 역 점수 계열을 분리하고, 마지막에 전체 배율을 적용한다. 이 구조는 유물과 증강이 특정 채널만 강화할 수 있게 만든다.</p>
+    <div class="formula">
+      ((패 기본 점수 + 패 점수 보너스) * 패 배율<br>
+      + (역 점수 + 도라 점수 + 역 점수 보너스) * 역 배율)<br>
+      * 완성 배율 * 전체 배율
+    </div>
+    <table>
+      <tr><th>점수 채널</th><th>설명</th><th>주요 강화 수단</th></tr>
+      <tr><td>패 기본 점수</td><td>손패에 포함된 패 자체의 점수. 자패는 높은 기본 점수를 가진다.</td><td>패 강화, 패 대상 증강</td></tr>
+      <tr><td>역 점수</td><td>완성 손패가 만족하는 역의 고정 점수 합산.</td><td>역 대상 증강, 유물</td></tr>
+      <tr><td>도라 점수</td><td>도라 표시패와 같은 패를 보유하면 장당 10점.</td><td>도라 관련 유물, 리치 뒷도라</td></tr>
+      <tr><td>배율</td><td>패 배율, 역 배율, 완성 배율, 전체 배율로 구분.</td><td>고등급 유물, 리치, 고판 역</td></tr>
+    </table>
+
+    <h3>리치와 깡</h3>
+    <div class="two-column">
+      <div class="card">
+        <strong>리치</strong>
+        <p>한 장 교체로 완성 가능한 텐파이 상태에서 선언한다. 선언 후 자동 진행으로 대기패를 찾으며, 성공 시 리치 보너스와 뒷도라 계산이 적용된다. 남은 교환 횟수가 많을수록 리치 역 배율 보너스가 증가한다.</p>
+      </div>
+      <div class="card">
+        <strong>깡</strong>
+        <p>같은 얼굴 4장을 보유하면 선언할 수 있다. 깡 선언 시 패를 공개 묶음으로 빼고 영상패를 받으며, 도라가 추가 공개된다. 깡 3회와 4회는 각각 삼깡쯔, 사깡쯔 조건으로 이어진다.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="page section">
+    <h2>4. 역과 콘텐츠 구성</h2>
+    <h3>구현된 마작 기반 역</h3>
+    <p>현재 프로젝트는 기본 역부터 고난도 역만까지 폭넓은 역을 구현해, 단순 점수 계산을 넘어 실제 마작 조합을 찾는 재미를 제공한다. 전통 판수는 참고값으로 노출하고, 게임 진행에는 별도의 점수를 사용한다.</p>
+    <table class="small">
+      <tr><th>분류</th><th>역</th><th>게임 내 역할</th></tr>
+      <tr><td>기본 완성 보상</td><td>리치, 탕야오, 핑후, 역패, 이페코, 영상개화</td><td>초중반 목표 점수 돌파의 안정적 기반</td></tr>
+      <tr><td>중형 조합</td><td>칠대자, 또이또이, 삼색동순, 일기통관, 삼색동각, 삼암각, 소삼원, 찬타, 준찬타, 혼노두, 량페코</td><td>손패 방향성을 명확하게 만드는 빌드 목표</td></tr>
+      <tr><td>색/종류 집중</td><td>혼일색, 청일색</td><td>상점 패 편집과 강하게 시너지를 내는 고점 경로</td></tr>
+      <tr><td>역만</td><td>국사무쌍, 사암각, 대삼원, 소사희, 대사희, 자일색, 청노두, 녹일색, 구련보등, 사깡쯔</td><td>희귀하지만 런 후반의 폭발적 점수 목표</td></tr>
+    </table>
+
+    <h3>게임 전용 역</h3>
+    <table>
+      <tr><th>역</th><th>점수</th><th>조건</th><th>기획 의도</th></tr>
+      <tr><td>얇은 패산</td><td>16점</td><td>플레이어 패 풀이 14장보다 적은 상태에서 완성 손패 제출</td><td>삭제 중심 패 풀 압축 빌드 보상</td></tr>
+      <tr><td>오중 울림</td><td>28점</td><td>완성 손패에 같은 얼굴의 패 5장 이상</td><td>기존 마작을 넘어서는 중복 패 풀 변형 보상</td></tr>
+      <tr><td>육중 울림</td><td>42점</td><td>완성 손패에 같은 얼굴의 패 6장 이상</td><td>극단적 추가 빌드의 고점 보상</td></tr>
+    </table>
+
+    <h3>유물</h3>
+    <p>유물은 런 동안 유지되는 강화 효과다. 점수 채널을 직접 올리거나, 교환 횟수와 상점 편집 횟수 같은 플레이어 상태를 조정한다.</p>
+    <table class="small">
+      <tr><th>유물 방향</th><th>대표 유물</th><th>효과 예시</th></tr>
+      <tr><td>특정 조합 보상</td><td>대나무 렌즈, 붉은 점봉, 커쯔 북, 삼원패 봉인</td><td>슌쯔, 커쯔, 삼원패 조건 달성 시 역 점수 증가</td></tr>
+      <tr><td>패 구성 보상</td><td>자패 금고, 청색 붓, 끝패 프리즘, 중장패 광택, 일색 등롱</td><td>자패, 끝패, 중장패, 일색 구성에 따라 패 점수 또는 배율 증가</td></tr>
+      <tr><td>도라/역만 보상</td><td>도라 방울, 도라 거울, 역만 깃발</td><td>도라 또는 역만 달성 시 역 점수와 전체 배율 증가</td></tr>
+      <tr><td>런 운영 변형</td><td>여분의 패산, 무거운 점봉, 상점 끌, 패 거푸집, 검소한 패꽂이</td><td>교환 횟수와 상점 편집 횟수를 조정하고 대가로 배율 제공</td></tr>
+    </table>
+
+    <h3>증강</h3>
+    <p>증강은 유물보다 좁은 조건에 강하게 작동하는 보상이다. 특정 역, 특정 패 얼굴, 특정 패 그룹을 강화해 플레이어가 빌드 방향을 세밀하게 잡도록 돕는다.</p>
+    <table class="small">
+      <tr><th>증강 유형</th><th>예시</th><th>효과</th></tr>
+      <tr><td>역 강화</td><td>탕야오 집중, 핑후 박자, 칠대자 비전, 청일색 왕관</td><td>대상 역이 붙으면 점수 또는 배율 증가</td></tr>
+      <tr><td>패 얼굴 강화</td><td>5만 조율, 백패 연마, 동풍 닻</td><td>특정 패 보유량에 따라 패 점수 또는 패 배율 증가</td></tr>
+      <tr><td>패 그룹 강화</td><td>자패 성장, 끝패 칼날, 중장패 가속</td><td>자패, 끝패, 중장패 그룹 보유량에 따라 성장</td></tr>
+    </table>
+  </section>
+
+  <section class="page section">
+    <h2>5. 상점과 성장 설계</h2>
+    <h3>상점 진입</h3>
+    <p>라운드를 통과하면 즉시 다음 라운드로 넘어가지 않고 상점에 진입한다. 플레이어는 라운드 성과로 얻은 코인을 사용해 다음 라운드의 기대 점수를 높이는 선택을 한다.</p>
+    <table>
+      <tr><th>재화 지급</th><th>내용</th></tr>
+      <tr><td>기본 보상</td><td>라운드 클리어 시 4코인</td></tr>
+      <tr><td>초과 보너스</td><td>목표 점수 초과 25점마다 1코인</td></tr>
+      <tr><td>보너스 상한</td><td>초과 보너스 최대 6코인</td></tr>
+      <tr><td>튜토리얼 보상</td><td>상점 체험을 위해 10코인 지급</td></tr>
+    </table>
+
+    <h3>상품 구성과 가격</h3>
+    <table>
+      <tr><th>상품</th><th>후보 수</th><th>가격</th><th>역할</th></tr>
+      <tr><td>유물</td><td>2개</td><td>일반 6 / 희귀 9 / 전설 13</td><td>런 전체의 큰 방향성 결정</td></tr>
+      <tr><td>증강</td><td>2개</td><td>일반 4 / 희귀 7 / 전설 10</td><td>특정 역 또는 패에 대한 세부 강화</td></tr>
+      <tr><td>패 강화</td><td>3개</td><td>4코인</td><td>패 기본 점수 증가</td></tr>
+      <tr><td>패 추가</td><td>3개</td><td>3코인</td><td>패 풀 방향성 강화 또는 중복 전략 지원</td></tr>
+      <tr><td>패 삭제</td><td>3개</td><td>5코인</td><td>불필요한 패 제거와 패 풀 압축</td></tr>
+    </table>
+
+    <h3>상점 편집 제한</h3>
+    <p>상점마다 패 강화, 추가, 삭제는 각각 기본 1회씩 사용할 수 있다. 일부 유물은 이 제한을 늘리거나 줄인다. 이 구조는 코인만 많으면 모든 편집을 무제한 수행하는 상황을 막고, “이번 상점에서 무엇을 먼저 살 것인가”라는 선택 압력을 만든다.</p>
+
+    <div class="summary-grid">
+      <div class="card">
+        <strong>압축 빌드</strong>
+        <p>삭제를 통해 불필요한 패를 줄이고 특정 얼굴, 특정 색, 특정 역의 출현 확률을 높인다.</p>
+      </div>
+      <div class="card">
+        <strong>중복 빌드</strong>
+        <p>패 추가로 같은 얼굴을 여러 장 쌓아 오중 울림, 육중 울림 같은 게임 전용 역을 노린다.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="page section">
+    <h2>6. UX와 화면 구성</h2>
+    <h3>주요 화면</h3>
+    <table>
+      <tr><th>화면</th><th>구성</th><th>목적</th></tr>
+      <tr><td>타이틀</td><td>튜토리얼 시작, 본 게임 시작, 역 목록, 용어 설명</td><td>초기 진입과 학습 경로 분리</td></tr>
+      <tr><td>게임 화면</td><td>목표 점수, 현재 점수, 라운드, 교환 횟수, 도라, 코인, 손패, 액션 버튼</td><td>현재 판단에 필요한 정보를 한 화면에 집중</td></tr>
+      <tr><td>점수 패널</td><td>패 점수, 역 점수, 도라, 유물/증강 보너스, 배율, 최종 점수</td><td>왜 이 점수가 나왔는지 즉시 이해</td></tr>
+      <tr><td>유물/증강 패널</td><td>보유 중인 지속 효과 목록</td><td>현재 빌드 방향 확인</td></tr>
+      <tr><td>상점</td><td>유물/증강 구매, 패 편집, 코인, 편집 제한</td><td>라운드 사이 성장 선택</td></tr>
+      <tr><td>모달</td><td>역 목록, 용어 설명, 보상 선택, 엔딩</td><td>보조 정보와 상태 전환 제공</td></tr>
+    </table>
+
+    <h3>학습 장치</h3>
+    <ul>
+      <li>튜토리얼은 고정 손패와 고정 드로우를 사용해 교환, 제출, 상점 체험을 순서대로 안내한다.</li>
+      <li>마작 용어는 화면 텍스트에서 툴팁으로 확인할 수 있다.</li>
+      <li>역 목록 모달은 구현된 역의 조건, 점수, 예시 손패를 함께 제공한다.</li>
+      <li>점수 패널은 결과만 보여주는 대신 점수 구성 요소를 세분화해 학습 비용을 낮춘다.</li>
+    </ul>
+
+    <h3>조작 흐름</h3>
+    <ol>
+      <li>손패에서 교환할 패를 선택한다.</li>
+      <li>선택한 패 교환 버튼으로 패산에서 새 패를 받는다.</li>
+      <li>리치 가능 상태라면 리치를 선언하고 자동 진행 결과를 확인한다.</li>
+      <li>깡 가능 상태라면 깡을 선언해 영상패와 추가 도라를 노린다.</li>
+      <li>목표 점수 이상이면 조합 제출로 라운드를 종료한다.</li>
+      <li>상점에서 다음 라운드 빌드 방향을 강화한다.</li>
+    </ol>
+  </section>
+
+  <section class="page section">
+    <h2>7. 기술 구조와 구현 현황</h2>
+    <h3>모듈 구성</h3>
+    <table class="small">
+      <tr><th>영역</th><th>주요 파일</th><th>역할</th></tr>
+      <tr><td>앱 진입</td><td>index.html, src/app.js</td><td>앱 마운트, 상태 렌더링, 루트 이벤트 연결</td></tr>
+      <tr><td>게임 상태</td><td>src/game.js</td><td>런 생성, 라운드 진행, 교환, 제출, 보상, 상점 상태 관리</td></tr>
+      <tr><td>손패 분석</td><td>src/game/hand-analysis.js</td><td>완성형, 몸통, 머리, 특수형 분석</td></tr>
+      <tr><td>역 판정</td><td>src/game/yaku-*.js</td><td>마작 기반 역과 게임 전용 역 판정</td></tr>
+      <tr><td>리치</td><td>src/game/riichi.js</td><td>텐파이 후보, 대기패, 리치 성공 판정</td></tr>
+      <tr><td>유물/증강</td><td>src/data/*.json, src/game/*effects.js</td><td>데이터 기반 효과 정의와 런타임 핸들러 연결</td></tr>
+      <tr><td>UI 렌더링</td><td>src/ui/render/*.js</td><td>게임 화면, 점수, 상점, 모달, 타일, 오디오 렌더링</td></tr>
+      <tr><td>이벤트</td><td>src/ui/events.js</td><td>클릭, 툴팁, 리치 자동 진행, 배경음 처리</td></tr>
+      <tr><td>자산</td><td>src/source/*.png, src/music/*.mp3</td><td>마작패 이미지와 배경 음악</td></tr>
+    </table>
+
+    <h3>검증 스크립트</h3>
+    <p>프로젝트는 `npm run check`로 주요 JS 파일의 문법 검사와 데이터 검증, 역 판정, 패산 검증을 수행한다.</p>
+    <ul>
+      <li>유물 데이터 검증: 필수 필드와 효과 타입 확인</li>
+      <li>증강 데이터 검증: 대상과 효과 타입 확인</li>
+      <li>역 판정 검증: 대표 손패 테스트 케이스 확인</li>
+      <li>패산 검증: 초기 라운드와 다음 라운드가 하나의 물리적 패 풀 규칙을 지키는지 확인</li>
+    </ul>
+
+    <h3>현재 구현 완료 범위</h3>
+    <table>
+      <tr><th>기능</th><th>상태</th><th>비고</th></tr>
+      <tr><td>타이틀/튜토리얼/본 게임 진입</td><td>완료</td><td>튜토리얼과 본 게임 흐름 분리</td></tr>
+      <tr><td>5라운드 목표 점수 진행</td><td>완료</td><td>최종 라운드 완주 판정 포함</td></tr>
+      <tr><td>실시간 점수 계산</td><td>완료</td><td>패, 역, 도라, 유물, 증강, 배율 분리 표시</td></tr>
+      <tr><td>리치/뒷도라</td><td>완료</td><td>자동 진행과 성공 상태 점수 반영</td></tr>
+      <tr><td>깡/영상패/추가 도라</td><td>완료</td><td>최대 4회 선언 제한</td></tr>
+      <tr><td>유물/증강 데이터화</td><td>완료</td><td>JSON 데이터와 효과 핸들러 분리</td></tr>
+      <tr><td>상점과 패 풀 편집</td><td>완료</td><td>강화, 추가, 삭제, 구매 제한 포함</td></tr>
+      <tr><td>용어 툴팁/역 목록</td><td>완료</td><td>학습 보조 UI 제공</td></tr>
+    </table>
+  </section>
+
+  <section class="section">
+    <h2>8. 향후 개선 방향</h2>
+    <h3>콘텐츠 확장</h3>
+    <ul>
+      <li>라운드 수와 목표 점수 곡선을 확장해 장기 런 구조를 만든다.</li>
+      <li>유물과 증강의 희귀도별 풀을 늘리고, 특정 빌드 전용 시너지를 추가한다.</li>
+      <li>상점 이벤트, 저주 유물, 일회성 소비 아이템 등 라운드 사이 선택지를 확장한다.</li>
+      <li>게임 전용 역을 추가해 패 풀 편집의 가치를 더 명확하게 만든다.</li>
+    </ul>
+
+    <h3>룰 정교화</h3>
+    <ul>
+      <li>리치마작의 대기 형태, 멘젠/부로, 쯔모/론 차이를 더 정밀하게 반영한다.</li>
+      <li>역 중복과 고판 조합의 밸런스를 점검해 고점 폭주를 조정한다.</li>
+      <li>도라 표시패와 실제 도라 계산 규칙을 정식 리치마작 규칙에 더 가깝게 확장할 수 있다.</li>
+    </ul>
+
+    <h3>사용성 개선</h3>
+    <ul>
+      <li>현재 손패에서 성립 가능한 역 후보와 교환 추천 후보를 시각화한다.</li>
+      <li>상점에서 구매 전 예상 점수 변화 또는 빌드 태그를 표시한다.</li>
+      <li>모바일 화면에서 손패, 점수 패널, 상점 후보의 가독성을 추가 검증한다.</li>
+      <li>런 종료 후 최종 빌드 리포트와 획득 유물/증강 요약을 제공한다.</li>
+    </ul>
+
+    <h3>제작 메모</h3>
+    <p class="note">Riichi Rogue의 현재 방향은 “마작을 몰라도 점수 빌드 게임으로 접근할 수 있고, 마작을 알면 더 깊은 조합 판단을 할 수 있는 게임”이다. 따라서 이후 개발에서는 룰 정확도보다 플레이어가 선택의 이유를 이해할 수 있는 정보 구조와 빌드 피드백을 우선한다.</p>
+    <p class="footer-note">본 문서는 2026년 5월 25일 현재 로컬 프로젝트의 코드, 데이터, README, 기획 문서를 기준으로 작성했다.</p>
+  </section>
+</body>
+</html>

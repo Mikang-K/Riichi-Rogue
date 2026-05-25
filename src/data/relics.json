@@ -57,7 +57,7 @@
   },
   {
     "id": "same-number",
-    "name": "삼색 숫자패",
+    "name": "삼색 수패",
     "rarity": "common",
     "text": "세 수패에 같은 숫자가 있으면 역 점수 +18점",
     "effect": { "type": "sameNumberAllSuitsScoreBonus", "score": 18 }

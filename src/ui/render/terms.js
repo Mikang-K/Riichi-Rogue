@@ -19,7 +19,8 @@ export function renderTermText(value) {
   const text = String(value ?? "");
   if (!text || termEntries.length === 0) return escapeHtml(text);
 
-  return escapeHtml(text).replace(termPattern, (label) => {
+  return escapeHtml(text).replace(termPattern, (label, offset, source) => {
+    if (hasWordPrefix(source, offset)) return label;
     const term = termLookup.get(label);
     if (!term) return label;
     return `<span class="term-glossary" data-term-name="${escapeAttribute(term.name)}">${label}</span>`;
@@ -45,4 +46,9 @@ function escapeAttribute(value) {
 
 function escapeRegex(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function hasWordPrefix(source, offset) {
+  if (offset <= 0) return false;
+  return /[\p{L}\p{N}]/u.test(source[offset - 1]);
 }
