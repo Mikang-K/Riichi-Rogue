@@ -1,6 +1,6 @@
 import { renderTermText } from "./terms.js";
 
-export function renderScore(score) {
+export function renderScore(score, options = {}) {
   const yaku = score.yaku.length
     ? score.yaku.map((item) => `<li><span>${renderTermText(item.name)}</span><strong>${item.score}점</strong></li>`).join("")
     : `<li><span>${renderTermText(score.isComplete ? "역 없음" : "미완성 손패")}</span><strong>0점</strong></li>`;
@@ -26,6 +26,27 @@ export function renderScore(score) {
       <li><span>${renderTermText("전체 배율")}</span><strong>x${formatMultiplier(score.globalMultiplier)}</strong></li>
       <li><span>${renderTermText("최종 점수")}</span><strong>${score.totalScore}점</strong></li>
     </ul>
+    <div class="score-detail">
+      <button class="secondary score-detail-toggle" data-action="toggle-score-detail">
+        ${renderTermText(options.isDetailOpen ? "계산 상세 닫기" : "계산 상세")}
+      </button>
+      ${options.isDetailOpen ? renderScoreDetail(score) : ""}
+    </div>
+  `;
+}
+
+function renderScoreDetail(score) {
+  const detail = score.scoreBreakdown;
+  if (!detail) return "";
+  return `
+    <div class="score-detail-panel">
+      <p>${renderTermText("패 점수")}: (${detail.tile.base} + ${detail.tile.bonus}) x ${formatMultiplier(detail.tile.multiplier)} = ${detail.tile.total}</p>
+      <p>${renderTermText("역 점수")}: (${detail.yaku.base} + ${detail.yaku.dora} + ${detail.yaku.bonus}) x ${formatMultiplier(detail.yaku.multiplier)} = ${detail.yaku.total}</p>
+      <p>${renderTermText("완성 배율")}: x${formatMultiplier(detail.yaku.completionMultiplier)}</p>
+      ${detail.yaku.riichiMultiplierBonus ? `<p>${renderTermText("리치 보너스")}: x+${formatMultiplier(detail.yaku.riichiMultiplierBonus)}</p>` : ""}
+      <p>${renderTermText("전체 배율")}: x${formatMultiplier(detail.global.multiplier)}</p>
+      <p><strong>${renderTermText("최종 점수")}: ${detail.global.total}</strong></p>
+    </div>
   `;
 }
 

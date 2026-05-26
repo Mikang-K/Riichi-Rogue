@@ -191,9 +191,12 @@ const confirmedSingleRiichi = confirmRiichiDiscard(declaredRiichi, declaredRiich
 if (confirmedSingleRiichi.riichi.phase !== "declared") {
   throw new Error("단일 리치 후보 선택 후 선언 상태로 진입하지 못했습니다.");
 }
+if (confirmedSingleRiichi.discardsLeft !== 11 || confirmedSingleRiichi.riichi.bonusDiscards !== 10) {
+  throw new Error("리치 선언 후 임시 교환 횟수 10회가 보장되지 않았습니다.");
+}
 
 const advancedRiichi = advanceRiichi(confirmedSingleRiichi);
-if (advancedRiichi.status !== "playing" || advancedRiichi.riichi.phase !== "ready" || advancedRiichi.discardsLeft !== 0) {
+if (advancedRiichi.status !== "playing" || advancedRiichi.riichi.phase !== "ready" || advancedRiichi.discardsLeft !== 10) {
   throw new Error("리치 성공 후 조합 제출 직전 상태로 유지되지 않았습니다.");
 }
 

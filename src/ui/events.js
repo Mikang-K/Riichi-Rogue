@@ -11,8 +11,11 @@ import {
   newTutorial,
   chooseReward,
   buyShopOffer,
+  rerollShop,
+  toggleShopOfferLock,
   leaveShop,
 } from "../game.js";
+import { clearRunSave, loadRunSave, restoreSavedState } from "../game/save.js";
 import { playSfx, startBackgroundMusic, toggleBackgroundMusic } from "./audio.js";
 import { escapeHtml, getTermDefinition } from "./render/terms.js";
 
@@ -130,7 +133,7 @@ export function initEvents({ getState, setState, getUiState, setUiState, rerende
       return;
     }
 
-    if (shopOfferId) {
+    if (shopOfferId && action === "buy-shop-offer") {
       setState(buyShopOffer(getState(), shopOfferId));
       rerender();
       return;
@@ -164,6 +167,14 @@ export function initEvents({ getState, setState, getUiState, setUiState, rerende
         setState(leaveShop(getState()));
         rerender();
         break;
+      case "reroll-shop":
+        setState(rerollShop(getState()));
+        rerender();
+        break;
+      case "toggle-shop-lock":
+        setState(toggleShopOfferLock(getState(), shopOfferId));
+        rerender();
+        break;
       case "submit":
         clearRiichiTimer();
         {
@@ -188,6 +199,17 @@ export function initEvents({ getState, setState, getUiState, setUiState, rerende
       case "skip-tutorial":
         clearRiichiTimer();
         setState(newRun());
+        rerender();
+        break;
+      case "resume-run":
+        {
+          const restored = restoreSavedState(loadRunSave());
+          if (restored) setState(restored);
+        }
+        rerender();
+        break;
+      case "clear-save":
+        clearRunSave();
         rerender();
         break;
       case "start-tutorial":
@@ -222,6 +244,10 @@ export function initEvents({ getState, setState, getUiState, setUiState, rerende
         rerender();
         break;
       }
+      case "toggle-score-detail":
+        setUiState({ isScoreDetailOpen: !uiState.isScoreDetailOpen });
+        rerender();
+        break;
       default:
         break;
     }

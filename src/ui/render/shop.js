@@ -26,8 +26,8 @@ export function renderShop(state) {
           <section class="shop-section">
             <h3>${renderTermText("유물과 증강")}</h3>
             <div class="shop-offers">
-              ${renderShopOffers(shop.offers.relics, "유물")}
-              ${renderShopOffers(shop.offers.augments, "증강")}
+              ${renderShopOffers(shop, shop.offers.relics ?? [], "유물", state.coins)}
+              ${renderShopOffers(shop, shop.offers.augments ?? [], "증강", state.coins)}
             </div>
           </section>
           <section class="shop-section">
@@ -42,6 +42,7 @@ export function renderShop(state) {
         </div>
         <p class="message">${renderTermText(state.message)}</p>
         <div class="shop-actions">
+          ${isTutorial ? "" : `<button data-action="reroll-shop" ${state.coins < (shop.rerollPrice ?? 2) ? "disabled" : ""}>${renderTermText("리롤")} ${shop.rerollPrice ?? 2}${renderTermText("코인")}</button>`}
           <button data-action="leave-shop" data-tutorial-target="leave-shop" class="${tutorialTarget === "leave-shop" ? "tutorial-target-active" : ""}" ${isTutorial && !state.tutorial?.hasEditedTile ? "disabled" : ""}>${renderTermText(isTutorial ? "튜토리얼 완료" : "다음 라운드")}</button>
         </div>
       </div>
@@ -54,7 +55,7 @@ function renderRewardSummary(shop) {
   return `
     <p class="modal-note">
       ${renderTermText("점수")} ${shop.lastScore} / ${renderTermText("목표 점수")} ${shop.lastTargetScore}.
-      ${renderTermText("획득 코인")}: ${reward.totalCoins}개 (${renderTermText("기본")} ${reward.baseCoins}개 + ${renderTermText("초과 보너스")} ${reward.bonusCoins}개).
+      ${renderTermText("획득 코인")}: ${reward.totalCoins}개(${renderTermText("기본")} ${reward.baseCoins}개 + ${renderTermText("초과 보너스")} ${reward.bonusCoins}개).
     </p>
   `;
 }
@@ -69,18 +70,21 @@ function renderEditLimits(shop) {
   `;
 }
 
-function renderShopOffers(offers, label) {
+function renderShopOffers(shop, offers, label, coins) {
   return offers.map((offer) => `
-    <button
-      class="shop-offer relic-${offer.rarity ?? "common"}"
-      data-action="buy-shop-offer"
-      data-shop-offer-id="${offer.id}"
-      ${offer.sold ? "disabled" : ""}
-    >
-      <small>${renderTermText(label)} - ${formatRarity(offer.rarity)} - ${offer.price}${renderTermText("코인")}</small>
-      <strong>${renderTermText(offer.name)}</strong>
-      <span>${renderTermText(offer.text)}</span>
-    </button>
+    <div class="shop-offer-card ${isOfferLocked(shop, offer) ? "is-locked" : ""}">
+      <button
+        class="shop-offer relic-${offer.rarity ?? "common"}"
+        data-action="buy-shop-offer"
+        data-shop-offer-id="${offer.id}"
+        ${offer.sold || coins < offer.price ? "disabled" : ""}
+      >
+        <small>${renderTermText(label)} - ${formatRarity(offer.rarity)} - ${offer.price}${renderTermText("코인")}</small>
+        <strong>${renderTermText(offer.name)}</strong>
+        <span>${renderTermText(offer.text)}</span>
+      </button>
+      ${renderLockButton(shop, offer)}
+    </div>
   `).join("");
 }
 
@@ -104,18 +108,34 @@ function renderTileChoiceOffers(state, offers, label, editType) {
   return offers.map((offer) => {
     const bonus = offer.tile.enhancement?.tileScoreBonus ?? 0;
     return `
-      <button
-        class="shop-offer shop-tile-offer ${isActiveTarget ? "tutorial-target-active" : ""}"
-        data-action="buy-shop-offer"
-        data-shop-offer-id="${offer.id}"
-        ${tileTutorialTarget ? `data-tutorial-target="${tileTutorialTarget}"` : ""}
-        ${offer.sold || used >= limit || state.coins < offer.price ? "disabled" : ""}
-      >
-        <small>${renderTermText(label)} - ${offer.price}${renderTermText("코인")}</small>
-        <span class="shop-offer-tile">${renderTileFace(offer.tile)}</span>
-        <strong>${tileName(offer.tile)}</strong>
-        <span>${renderTermText(`${bonus ? `현재 +${bonus}. ` : ""}${offer.text}`)}</span>
-      </button>
+      <div class="shop-offer-card ${isOfferLocked(state.shop, offer) ? "is-locked" : ""}">
+        <button
+          class="shop-offer shop-tile-offer ${isActiveTarget ? "tutorial-target-active" : ""}"
+          data-action="buy-shop-offer"
+          data-shop-offer-id="${offer.id}"
+          ${tileTutorialTarget ? `data-tutorial-target="${tileTutorialTarget}"` : ""}
+          ${offer.sold || used >= limit || state.coins < offer.price ? "disabled" : ""}
+        >
+          <small>${renderTermText(label)} - ${offer.price}${renderTermText("코인")}</small>
+          <span class="shop-offer-tile">${renderTileFace(offer.tile)}</span>
+          <strong>${tileName(offer.tile)}</strong>
+          <span>${renderTermText(`${bonus ? `현재 +${bonus}. ` : ""}${offer.text}`)}</span>
+        </button>
+        ${renderLockButton(state.shop, offer, state.mode === "tutorial")}
+      </div>
     `;
   }).join("");
+}
+
+function renderLockButton(shop, offer, hidden = false) {
+  if (hidden) return "";
+  return `
+    <button class="shop-lock-button" data-action="toggle-shop-lock" data-shop-offer-id="${offer.id}" ${offer.sold ? "disabled" : ""}>
+      ${renderTermText(isOfferLocked(shop, offer) ? "잠금 해제" : "잠금")}
+    </button>
+  `;
+}
+
+function isOfferLocked(shop, offer) {
+  return (shop.lockedOfferIds ?? []).includes(offer.id);
 }

@@ -49,7 +49,7 @@ export function renderGameView(state, uiState) {
       ${renderTopbar(round, score, isTutorial)}
       ${renderStatusGrid(state, round)}
       ${renderTable(state, score)}
-      ${renderInfoGrid(state, score)}
+      ${renderInfoGrid(state, score, uiState)}
       ${renderOverlays(state, score, uiState)}
       ${isTutorial ? renderTutorialCoach(state, score) : ""}
       ${renderMusicControl(uiState.isMusicMuted)}
@@ -77,6 +77,7 @@ function renderTopbar(round, score, isTutorial) {
 }
 
 function renderStatusGrid(state, round) {
+  const discardLimit = getVisibleDiscardLimit(state);
   return `
     <section class="status-grid">
       <article class="panel compact">
@@ -85,7 +86,7 @@ function renderStatusGrid(state, round) {
       </article>
       <article class="panel compact">
         <span class="label">${renderTermText("교환")}</span>
-        <strong>${state.discardsLeft}/${state.maxDiscards}회</strong>
+        <strong>${state.discardsLeft}/${discardLimit}회</strong>
       </article>
       <article class="panel compact">
         <span class="label">${renderTermText("도라")}</span>
@@ -97,6 +98,10 @@ function renderStatusGrid(state, round) {
       </article>
     </section>
   `;
+}
+
+function getVisibleDiscardLimit(state) {
+  return state.maxDiscards + (state.riichi?.bonusDiscards ?? 0);
 }
 
 function renderTable(state, score) {
@@ -206,12 +211,12 @@ function formatRiichiPhase(phase) {
   }[phase] ?? "";
 }
 
-function renderInfoGrid(state, score) {
+function renderInfoGrid(state, score, uiState) {
   return `
     <section class="info-grid">
       <article class="panel">
         <h2>${renderTermText("점수")}</h2>
-        ${renderScore(score)}
+        ${renderScore(score, { isDetailOpen: uiState.isScoreDetailOpen })}
       </article>
       <article class="panel">
         <h2>${renderTermText("유물")}</h2>
@@ -235,7 +240,7 @@ function renderOverlays(state, score, uiState) {
     }) : ""}
     ${state.status === "reward" ? renderReward(state.rewardOptions, "보상 선택", "라운드를 통과했습니다. 다음 라운드에 가져갈 보상을 고르세요.") : ""}
     ${state.status === "shop" ? renderShop(state) : ""}
-    ${state.status === "lost" || state.status === "won" ? renderEnd(state.status, state.message) : ""}
+    ${state.status === "lost" || state.status === "won" ? renderEnd(state) : ""}
     ${renderYakuHelp(uiState.isYakuModalOpen, uiState.yakuHelpPage)}
     ${renderTermsHelp(uiState.isTermsModalOpen)}
   `;

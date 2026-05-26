@@ -150,12 +150,32 @@ function formatRewardType(type = "relic") {
   }[type] ?? "보상";
 }
 
-export function renderEnd(status, message) {
+export function renderEnd(state) {
+  const status = state.status;
+  const message = state.message;
+  const reports = state.run?.roundReports ?? [];
+  const bestScore = Math.max(0, ...reports.map((report) => report.totalScore ?? 0));
   return `
     <section class="overlay">
       <div class="modal">
         <h2>${renderTermText(status === "won" ? "완주 성공" : "게임 오버")}</h2>
         <p>${renderTermText(message)}</p>
+        ${state.run ? `
+          <div class="run-report">
+            <p><strong>Seed</strong> ${state.run.seed ?? "-"}</p>
+            <p>${renderTermText("최고 점수")}: ${bestScore} / ${renderTermText("라운드")} ${reports.length}</p>
+            ${reports.length ? `
+              <ol class="run-report-list">
+                ${reports.map((report) => `
+                  <li>
+                    <span>${renderTermText(report.roundName)} - ${report.totalScore}/${report.targetScore}</span>
+                    <small>${report.yaku.map((item) => renderTermText(item.name)).join(", ") || "-"}</small>
+                  </li>
+                `).join("")}
+              </ol>
+            ` : ""}
+          </div>
+        ` : ""}
         <button data-action="restart">${renderTermText("새 게임")}</button>
       </div>
     </section>

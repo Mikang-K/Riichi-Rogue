@@ -4,6 +4,7 @@ import { formatWaits, getRiichiState, isRiichiWinningHand } from "./game/riichi.
 import { relicPool, relicRarities } from "./game/relics.js";
 import { evaluateYaku } from "./game/yaku-evaluator.js";
 import { createRogueYaku } from "./game/rogue-yaku-data.js";
+import { cloneRng, createRandomSeed, createSeededRng, randomId, shuffleWithRng, takeWeightedItemWithRng } from "./game/rng.js";
 import { HONORS, SUITS, countTiles, sameFace, sortTiles } from "./game/tile-utils.js";
 
 export { augmentPool, augmentRarities, relicPool, relicRarities };
@@ -38,6 +39,7 @@ const MAX_YAKU_COMPLETION_MULTIPLIER_BONUS = 3;
 const RIICHI_YAKU_MULTIPLIER_BONUS = 0.75;
 const RIICHI_LEFTOVER_DISCARD_BONUS = 0.1;
 const MAX_RIICHI_YAKU_MULTIPLIER_BONUS = 1.5;
+const RIICHI_TEMP_DISCARD_BONUS = 10;
 const MAX_KAN_DECLARATIONS = 4;
 const ROUND_CLEAR_BASE_COINS = 4;
 const OVER_SCORE_PER_BONUS_COIN = 25;
@@ -60,12 +62,19 @@ const TILE_UPGRADES = [
   { id: "polished", name: "광택", text: "이 패의 기본 점수 +3점", tileScoreBonus: 3 },
   { id: "etched", name: "각인", text: "이 패의 기본 점수 +5점", tileScoreBonus: 5 },
 ];
-export function newRun() {
-  const playerTiles = buildStartingPlayerTiles();
-  const round = createRoundDeal(playerTiles);
+const BASE_SHOP_REROLL_PRICE = 2;
+const SHOP_REROLL_PRICE_INCREASE = 1;
+const MAX_SHOP_REROLL_PRICE = 6;
+
+export function newRun(seed = createRandomSeed()) {
+  const rng = createSeededRng(seed);
+  const playerTiles = buildStartingPlayerTiles(rng);
+  const round = createRoundDeal(playerTiles, rng);
 
   return {
     mode: "main",
+    rng,
+    run: createRunMeta(rng.seed),
     deck: round.deck,
     hand: round.hand,
     selected: [],
@@ -84,7 +93,7 @@ export function newRun() {
     shopEditLimits: { ...BASE_SHOP_EDIT_LIMITS },
     coins: 0,
     status: "startReward",
-    rewardOptions: getStartRewardOptions(),
+    rewardOptions: getStartRewardOptions(rng),
     message: "시작 유물을 하나 고르세요.",
   };
 }
@@ -97,6 +106,8 @@ export function newTitle() {
   };
   return {
     mode: "title",
+    rng: null,
+    run: null,
     deck: [],
     hand: [],
     selected: [],
@@ -122,6 +133,8 @@ export function newTitle() {
 export function newTutorial() {
   return {
     mode: "tutorial",
+    rng: null,
+    run: null,
     deck: [],
     hand: [],
     selected: [],
@@ -164,9 +177,11 @@ export function newTutorial() {
 }
 
 export function startRound(state) {
-  const round = createRoundDeal(state.playerTiles?.length ? state.playerTiles : buildStartingPlayerTiles());
+  const rng = cloneRng(state.rng);
+  const round = createRoundDeal(state.playerTiles?.length ? state.playerTiles : buildStartingPlayerTiles(rng), rng);
   return {
     ...state,
+    rng,
     mode: "main",
     deck: round.deck,
     hand: round.hand,
@@ -302,17 +317,19 @@ export function confirmRiichiDiscard(state, tileId) {
   return {
     ...state,
     selected: [],
+    discardsLeft: state.discardsLeft + RIICHI_TEMP_DISCARD_BONUS,
     riichi: {
       ...state.riichi,
       active: true,
       phase: "declared",
       exchangeTileId: candidate.exchangeTileId,
       waits: candidate.waits,
+      bonusDiscards: RIICHI_TEMP_DISCARD_BONUS,
       attemptsUsed: 0,
       lastDiscardedTile: null,
       lastDrawnTile: null,
     },
-    message: `리치 선언. 대기패: ${formatWaits(candidate.waits, tileName)}`,
+    message: `리치 선언. 임시 교환 횟수 +${RIICHI_TEMP_DISCARD_BONUS}회. 대기패: ${formatWaits(candidate.waits, tileName)}`,
   };
 }
 
@@ -434,8 +451,11 @@ export function declareKan(state, faceKey) {
 }
 
 function failRiichi(state) {
+  const result = scoreHand(getScoringTiles(state), getDoraState(state), state.relics, getScoreContext(state));
+  const targetScore = rounds[state.roundIndex]?.targetScore ?? 0;
+  const reportedState = appendRoundReport(state, result, targetScore, "failed", emptyCoinReward(result.totalScore, targetScore));
   return {
-    ...state,
+    ...reportedState,
     status: "lost",
     selected: [],
     riichi: {
@@ -452,7 +472,11 @@ function finishScoredHand(state, result, successMessage = null) {
     if (state.mode === "tutorial") {
       return { ...state, message: `${result.totalScore}점입니다. 연습 목표 ${targetScore}점을 넘기려면 동을 교환한 뒤 제출하세요.` };
     }
-    return { ...state, status: "lost", message: `${result.totalScore}점으로 목표 ${targetScore}점에 실패했습니다.` };
+    return {
+      ...appendRoundReport(state, result, targetScore, "failed", emptyCoinReward(result.totalScore, targetScore)),
+      status: "lost",
+      message: `${result.totalScore}점으로 목표 ${targetScore}점에 실패했습니다.`,
+    };
   }
 
   if (state.mode === "tutorial") {
@@ -475,9 +499,10 @@ function finishScoredHand(state, result, successMessage = null) {
 
   const nextRoundIndex = state.roundIndex + 1;
   const coinReward = getRoundClearCoins(result.totalScore, targetScore);
+  const reportedState = appendRoundReport(state, result, targetScore, "cleared", coinReward);
   if (nextRoundIndex >= rounds.length) {
     return {
-      ...state,
+      ...reportedState,
       status: "won",
       coins: state.coins + coinReward.totalCoins,
       message: successMessage ?? `최종 ${result.totalScore}점. 완주 성공! ${coinReward.totalCoins}코인을 획득했습니다.`,
@@ -485,12 +510,12 @@ function finishScoredHand(state, result, successMessage = null) {
   }
 
   return {
-    ...state,
+    ...reportedState,
     status: "shop",
     coins: state.coins + coinReward.totalCoins,
     selected: [],
     rewardOptions: [],
-    shop: createShopState(state, result, targetScore, coinReward),
+    shop: createShopState(reportedState, result, targetScore, coinReward),
     message: successMessage ?? `${result.totalScore}점으로 통과했습니다. ${coinReward.totalCoins}코인을 획득했습니다.`,
   };
 }
@@ -603,9 +628,11 @@ export function buyTileAdd(state, offerId) {
   if (offer.sold) return { ...state, message: "이미 추가한 패입니다." };
   if (!canUseShopEdit(state, "addTile")) return state;
   if (state.coins < offer.price) return { ...state, message: "코인이 부족합니다." };
-  const tile = createPlayerTile(offer.tile.suit, offer.tile.value, "shop-add", offer.tile.enhancement);
+  const rng = cloneRng(state.rng);
+  const tile = createPlayerTile(offer.tile.suit, offer.tile.value, "shop-add", offer.tile.enhancement, rng);
   return markShopOfferSold({
     ...state,
+    rng,
     coins: state.coins - offer.price,
     playerTiles: [...(state.playerTiles ?? []), tile],
     shop: useShopEdit(state.shop, "addTile"),
@@ -662,6 +689,60 @@ export function buyTileUpgrade(state, offerId) {
   return nextState;
 }
 
+export function toggleShopOfferLock(state, offerId) {
+  if (state.status !== "shop" || state.mode === "tutorial") return state;
+  const offer = getFlatShopOffers(state.shop).find((item) => item.id === offerId);
+  if (!offer || offer.sold) return state;
+  const lockedOfferIds = new Set(state.shop?.lockedOfferIds ?? []);
+  if (lockedOfferIds.has(offerId)) {
+    lockedOfferIds.delete(offerId);
+  } else {
+    lockedOfferIds.add(offerId);
+  }
+  return {
+    ...state,
+    shop: {
+      ...state.shop,
+      lockedOfferIds: [...lockedOfferIds],
+    },
+    message: lockedOfferIds.has(offerId) ? "상품을 잠갔습니다." : "상품 잠금을 해제했습니다.",
+  };
+}
+
+export function rerollShop(state) {
+  if (state.status !== "shop" || state.mode === "tutorial") return state;
+  const shop = state.shop;
+  if (!shop) return state;
+  const rerollPrice = shop.rerollPrice ?? BASE_SHOP_REROLL_PRICE;
+  if (state.coins < rerollPrice) return { ...state, message: "리롤할 코인이 부족합니다." };
+
+  const rng = cloneRng(state.rng);
+  const lockedOfferIds = new Set(shop.lockedOfferIds ?? []);
+  const lockedByGroup = Object.fromEntries(
+    Object.entries(shop.offers).map(([key, offers]) => [
+      key,
+      offers.filter((offer) => lockedOfferIds.has(offer.id) && !offer.sold),
+    ]),
+  );
+  const nextOffers = createShopOffers(state, rng, lockedByGroup);
+  const nextLockedOfferIds = Object.values(lockedByGroup).flat().map((offer) => offer.id);
+  const nextRerollCount = (shop.rerollCount ?? 0) + 1;
+
+  return {
+    ...state,
+    rng,
+    coins: state.coins - rerollPrice,
+    shop: {
+      ...shop,
+      offers: nextOffers,
+      lockedOfferIds: nextLockedOfferIds,
+      rerollCount: nextRerollCount,
+      rerollPrice: Math.min(MAX_SHOP_REROLL_PRICE, BASE_SHOP_REROLL_PRICE + (nextRerollCount * SHOP_REROLL_PRICE_INCREASE)),
+    },
+    message: `상점 상품을 리롤했습니다. ${rerollPrice}코인을 사용했습니다.`,
+  };
+}
+
 export function leaveShop(state) {
   if (state.status !== "shop") return state;
   if (state.mode === "tutorial") {
@@ -715,6 +796,27 @@ export function scoreHand(tiles, dora, relics = [], context = {}) {
   const tileScoreTotal = Math.floor((tileScore + bonusTotals.tileScoreBonus) * tileMultiplier);
   const yakuScoreTotal = Math.floor((yakuScore + doraScore + bonusTotals.yakuScoreBonus) * yakuMultiplier);
   const totalScore = Math.floor((tileScoreTotal + yakuScoreTotal) * globalMultiplier);
+  const scoreBreakdown = {
+    tile: {
+      base: tileScore,
+      bonus: bonusTotals.tileScoreBonus,
+      multiplier: tileMultiplier,
+      total: tileScoreTotal,
+    },
+    yaku: {
+      base: yakuScore,
+      dora: doraScore,
+      bonus: bonusTotals.yakuScoreBonus,
+      multiplier: yakuMultiplier,
+      completionMultiplier: yakuCompletionMultiplier,
+      riichiMultiplierBonus,
+      total: yakuScoreTotal,
+    },
+    global: {
+      multiplier: globalMultiplier,
+      total: totalScore,
+    },
+  };
 
   return {
     isComplete: analysis.isComplete,
@@ -743,7 +845,57 @@ export function scoreHand(tiles, dora, relics = [], context = {}) {
     globalMultiplier,
     totalScore,
     totalHan,
+    scoreBreakdown,
   };
+}
+
+function appendRoundReport(state, result, targetScore, status, coinReward) {
+  if (!state.run) return state;
+  const report = createRoundReport(state, result, targetScore, status, coinReward);
+  return {
+    ...state,
+    run: {
+      ...state.run,
+      roundReports: [...(state.run.roundReports ?? []), report],
+    },
+  };
+}
+
+function createRoundReport(state, result, targetScore, status, coinReward) {
+  return {
+    roundIndex: state.roundIndex,
+    roundName: rounds[state.roundIndex]?.name ?? `Round ${state.roundIndex + 1}`,
+    targetScore,
+    totalScore: result.totalScore,
+    status,
+    hand: summarizeTiles(state.hand),
+    scoringTiles: summarizeTiles(getScoringTiles(state)),
+    yaku: result.yaku.map((item) => ({ id: item.id, name: item.name, han: item.han, score: item.score })),
+    doraCount: result.doraCount,
+    regularDoraCount: result.regularDoraCount ?? result.doraCount,
+    uraDoraCount: result.uraDoraCount ?? 0,
+    relics: (state.relics ?? []).map((item) => ({ id: item.id, name: item.name, rarity: item.rarity })),
+    augments: (state.augments ?? []).map((item) => ({ id: item.id, name: item.name, rarity: item.rarity })),
+    coinsBefore: state.coins ?? 0,
+    coinsEarned: coinReward.totalCoins,
+    coinsAfter: (state.coins ?? 0) + coinReward.totalCoins,
+    discardsLeft: state.discardsLeft,
+    riichi: state.riichi?.active ? {
+      phase: state.riichi.phase,
+      attemptsUsed: state.riichi.attemptsUsed,
+      waits: summarizeTiles(state.riichi.waits ?? []),
+    } : null,
+    kanCount: state.kan?.declaredCount ?? 0,
+    createdAt: new Date().toISOString(),
+  };
+}
+
+function summarizeTiles(tiles) {
+  return tiles.map((tile) => ({
+    suit: tile.suit,
+    value: tile.value,
+    enhancement: tile.enhancement ? { ...tile.enhancement } : undefined,
+  }));
 }
 
 export function getScoringTiles(state) {
@@ -868,6 +1020,7 @@ function emptyRiichiState() {
     exchangeTileId: null,
     waits: [],
     candidates: [],
+    bonusDiscards: 0,
     attemptsUsed: 0,
     lastDiscardedTile: null,
     lastDrawnTile: null,
@@ -918,7 +1071,25 @@ function getTutorialClearCoins(totalScore, targetScore) {
   };
 }
 
-function buildDeck() {
+function emptyCoinReward(totalScore, targetScore) {
+  return {
+    baseCoins: 0,
+    bonusCoins: 0,
+    totalCoins: 0,
+    overScore: Math.max(0, totalScore - targetScore),
+  };
+}
+
+function createRunMeta(seed) {
+  return {
+    id: randomId(null, "run"),
+    seed,
+    startedAt: new Date().toISOString(),
+    roundReports: [],
+  };
+}
+
+function buildDeck(rng = null) {
   const faces = [
     ...SUITS.flatMap((suit) => Array.from({ length: 9 }, (_, index) => ({ suit, value: index + 1 }))),
     ...HONORS.map((value) => ({ suit: "z", value })),
@@ -926,13 +1097,13 @@ function buildDeck() {
   return faces.flatMap((face) =>
     Array.from({ length: 4 }, (_, copy) => ({
       ...face,
-      copyId: `${face.suit}${face.value}-${copy}-${crypto.randomUUID()}`,
+      copyId: `${face.suit}${face.value}-${copy}-${randomId(rng, "tile")}`,
     })),
   );
 }
 
-function buildStartingPlayerTiles() {
-  return buildDeck().map((tile) => ({
+function buildStartingPlayerTiles(rng = null) {
+  return buildDeck(rng).map((tile) => ({
     ...tile,
     copyId: `player-${tile.copyId}`,
   }));
@@ -949,8 +1120,8 @@ function buildTutorialPlayerTiles() {
   return faces.map(([suit, value], index) => createPlayerTile(suit, value, `tutorial-player-${index}`));
 }
 
-function createRoundDeal(playerTiles) {
-  const wall = setupWall(playerTiles);
+function createRoundDeal(playerTiles, rng = null) {
+  const wall = setupWall(playerTiles, rng);
   return {
     deck: wall.liveWall,
     hand: drawRoundHand(wall.liveWall, STARTING_HAND_SIZE),
@@ -963,27 +1134,27 @@ function drawRoundHand(deck, count) {
   return sortTiles(draw(deck, count));
 }
 
-function cloneTileForRound(tile, prefix) {
+function cloneTileForRound(tile, prefix, rng = null) {
   return {
     suit: tile.suit,
     value: tile.value,
     enhancement: tile.enhancement ? { ...tile.enhancement } : undefined,
-    copyId: `${prefix}-${tile.suit}${tile.value}-${crypto.randomUUID()}`,
+    copyId: `${prefix}-${tile.suit}${tile.value}-${randomId(rng, "tile")}`,
   };
 }
 
-function createPlayerTile(suit, value, prefix = "player", enhancement = undefined) {
+function createPlayerTile(suit, value, prefix = "player", enhancement = undefined, rng = null) {
   return {
     suit,
     value,
     enhancement: enhancement ? { ...enhancement } : undefined,
-    copyId: `${prefix}-${suit}${value}-${crypto.randomUUID()}`,
+    copyId: `${prefix}-${suit}${value}-${randomId(rng, "tile")}`,
   };
 }
 
-function setupWall(playerTiles) {
-  const source = playerTiles?.length ? playerTiles : buildStartingPlayerTiles();
-  const deck = shuffle(source.map((tile) => cloneTileForRound(tile, "wall")));
+function setupWall(playerTiles, rng = null) {
+  const source = playerTiles?.length ? playerTiles : buildStartingPlayerTiles(rng);
+  const deck = shuffle(source.map((tile) => cloneTileForRound(tile, "wall", rng)), rng);
   const doraState = {
     indicators: draw(deck, 5),
     uraIndicators: draw(deck, 5),
@@ -1074,12 +1245,12 @@ function draw(deck, count) {
   return deck.splice(0, count);
 }
 
-function shuffle(items) {
-  return [...items].sort(() => Math.random() - 0.5);
+function shuffle(items, rng = null) {
+  return shuffleWithRng(items, rng);
 }
 
-function getStartRewardOptions() {
-  return getRelicRewardOptions([], 3);
+function getStartRewardOptions(rng = null) {
+  return getRelicRewardOptions([], 3, rng);
 }
 
 function getTutorialStartRewardOptions() {
@@ -1088,21 +1259,21 @@ function getTutorialStartRewardOptions() {
 
 function getRewardOptions(state) {
   return [
-    ...getRelicRewardOptions(state.relics ?? [], 1),
-    ...getAugmentRewardOptions(state.augments ?? [], 2),
+    ...getRelicRewardOptions(state.relics ?? [], 1, state.rng),
+    ...getAugmentRewardOptions(state.augments ?? [], 2, state.rng),
   ];
 }
 
-function getRelicRewardOptions(currentRelics, count) {
+function getRelicRewardOptions(currentRelics, count, rng = null) {
   const owned = new Set(currentRelics.map((relic) => relic.id));
-  return drawWeightedItems(relicPool.filter((relic) => !owned.has(relic.id)), count).map((item) =>
+  return drawWeightedItems(relicPool.filter((relic) => !owned.has(relic.id)), count, rng).map((item) =>
     createRewardOption("relic", item),
   );
 }
 
-function getAugmentRewardOptions(currentAugments, count) {
+function getAugmentRewardOptions(currentAugments, count, rng = null) {
   const owned = new Set(currentAugments.map((augment) => augment.id));
-  return drawWeightedItems(augmentPool.filter((augment) => !owned.has(augment.id)), count).map((item) =>
+  return drawWeightedItems(augmentPool.filter((augment) => !owned.has(augment.id)), count, rng).map((item) =>
     createRewardOption("augment", item),
   );
 }
@@ -1124,24 +1295,22 @@ function getAugmentRewardOptionsById(ids, currentAugments) {
 }
 
 function createShopState(state, result, targetScore, coinReward) {
+  const rng = state.rng ?? null;
   return {
     roundIndex: state.roundIndex,
     lastScore: result.totalScore,
     lastTargetScore: targetScore,
     lastReward: coinReward,
-    offers: {
-      relics: getRelicRewardOptions(state.relics ?? [], 2).map(createShopOffer),
-      augments: getAugmentRewardOptions(state.augments ?? [], 2).map(createShopOffer),
-      tileUpgrades: createTileUpgradeOffers(state.playerTiles ?? [], 3),
-      tileAdds: createTileAddOffers(state.playerTiles ?? [], 3),
-      tileRemoves: createTileRemoveOffers(state.playerTiles ?? [], 3),
-    },
+    offers: createShopOffers(state, rng),
     editsUsed: {
       removeTile: 0,
       addTile: 0,
       upgradeTile: 0,
     },
     editsLimit: { ...(state.shopEditLimits ?? BASE_SHOP_EDIT_LIMITS) },
+    lockedOfferIds: [],
+    rerollCount: 0,
+    rerollPrice: BASE_SHOP_REROLL_PRICE,
   };
 }
 
@@ -1177,7 +1346,31 @@ function createTutorialShopState(state, result, targetScore, coinReward) {
       upgradeTile: 0,
     },
     editsLimit: { ...(state.shopEditLimits ?? BASE_SHOP_EDIT_LIMITS) },
+    lockedOfferIds: [],
+    rerollCount: 0,
+    rerollPrice: BASE_SHOP_REROLL_PRICE,
   };
+}
+
+function createShopOffers(state, rng = null, lockedByGroup = {}) {
+  return {
+    relics: fillShopOfferGroup(lockedByGroup.relics, 2, () =>
+      getRelicRewardOptions(state.relics ?? [], 2, rng).map(createShopOffer)),
+    augments: fillShopOfferGroup(lockedByGroup.augments, 2, () =>
+      getAugmentRewardOptions(state.augments ?? [], 2, rng).map(createShopOffer)),
+    tileUpgrades: fillShopOfferGroup(lockedByGroup.tileUpgrades, 3, () =>
+      createTileUpgradeOffers(state.playerTiles ?? [], 3, rng)),
+    tileAdds: fillShopOfferGroup(lockedByGroup.tileAdds, 3, () =>
+      createTileAddOffers(state.playerTiles ?? [], 3, rng)),
+    tileRemoves: fillShopOfferGroup(lockedByGroup.tileRemoves, 3, () =>
+      createTileRemoveOffers(state.playerTiles ?? [], 3, rng)),
+  };
+}
+
+function fillShopOfferGroup(lockedOffers = [], targetCount, createFreshOffers) {
+  const locked = lockedOffers ?? [];
+  const fresh = createFreshOffers().filter((offer) => !locked.some((item) => item.id === offer.id));
+  return [...locked, ...fresh].slice(0, targetCount);
 }
 
 function createShopOffer(reward) {
@@ -1188,9 +1381,9 @@ function createShopOffer(reward) {
   };
 }
 
-function createTileAddOffers(playerTiles, count) {
-  return drawWeightedItems(playerTiles, count).map((tile, index) => ({
-    id: `tile-add-${tile.suit}${tile.value}-${index}-${crypto.randomUUID()}`,
+function createTileAddOffers(playerTiles, count, rng = null) {
+  return drawWeightedItems(playerTiles, count, rng).map((tile, index) => ({
+    id: `tile-add-${tile.suit}${tile.value}-${index}-${randomId(rng, "offer")}`,
     type: "tileAdd",
     name: `${tileName(tile)} 추가`,
     text: "현재 패 풀에 이 패의 복사본을 1장 추가합니다.",
@@ -1212,7 +1405,7 @@ function createTileEditOffer(tile, index, type) {
   if (type === "tileUpgrade") {
     const upgrade = TILE_UPGRADES[index % TILE_UPGRADES.length];
     return {
-      id: `tile-upgrade-${tile.suit}${tile.value}-${index}-${crypto.randomUUID()}`,
+      id: `tile-upgrade-${tile.suit}${tile.value}-${index}-${randomId(null, "offer")}`,
       type: "tileUpgrade",
       name: `${tileName(tile)} 강화`,
       text: upgrade.text,
@@ -1226,7 +1419,7 @@ function createTileEditOffer(tile, index, type) {
 
   if (type === "tileAdd") {
     return {
-      id: `tile-add-${tile.suit}${tile.value}-${index}-${crypto.randomUUID()}`,
+      id: `tile-add-${tile.suit}${tile.value}-${index}-${randomId(null, "offer")}`,
       type: "tileAdd",
       name: `${tileName(tile)} 추가`,
       text: "현재 패 풀에 이 패의 복사본을 1장 추가합니다.",
@@ -1238,7 +1431,7 @@ function createTileEditOffer(tile, index, type) {
   }
 
   return {
-    id: `tile-remove-${tile.suit}${tile.value}-${index}-${crypto.randomUUID()}`,
+    id: `tile-remove-${tile.suit}${tile.value}-${index}-${randomId(null, "offer")}`,
     type: "tileRemove",
     name: `${tileName(tile)} 삭제`,
     text: "현재 패 풀에서 이 패를 1장 삭제합니다.",
@@ -1253,11 +1446,11 @@ function findPlayerTile(playerTiles, suit, value) {
   return playerTiles.find((tile) => tile.suit === suit && tile.value === value);
 }
 
-function createTileUpgradeOffers(playerTiles, count) {
-  return drawWeightedItems(playerTiles, count).map((tile, index) => {
+function createTileUpgradeOffers(playerTiles, count, rng = null) {
+  return drawWeightedItems(playerTiles, count, rng).map((tile, index) => {
     const upgrade = TILE_UPGRADES[index % TILE_UPGRADES.length];
     return {
-      id: `tile-upgrade-${tile.suit}${tile.value}-${index}-${crypto.randomUUID()}`,
+      id: `tile-upgrade-${tile.suit}${tile.value}-${index}-${randomId(rng, "offer")}`,
       type: "tileUpgrade",
       name: `${tileName(tile)} 강화`,
       text: upgrade.text,
@@ -1270,9 +1463,9 @@ function createTileUpgradeOffers(playerTiles, count) {
   });
 }
 
-function createTileRemoveOffers(playerTiles, count) {
-  return drawWeightedItems(playerTiles, count).map((tile, index) => ({
-    id: `tile-remove-${tile.suit}${tile.value}-${index}-${crypto.randomUUID()}`,
+function createTileRemoveOffers(playerTiles, count, rng = null) {
+  return drawWeightedItems(playerTiles, count, rng).map((tile, index) => ({
+    id: `tile-remove-${tile.suit}${tile.value}-${index}-${randomId(rng, "offer")}`,
     type: "tileRemove",
     name: `${tileName(tile)} 삭제`,
     text: "현재 패 풀에서 이 패를 1장 삭제합니다.",
@@ -1366,25 +1559,19 @@ function findReward(state, rewardId) {
   return null;
 }
 
-function drawWeightedItems(candidates, count) {
+function drawWeightedItems(candidates, count, rng = null) {
   const options = [];
   const pool = [...candidates];
   while (options.length < count && pool.length > 0) {
-    const selected = takeWeightedItem(pool);
+    const selected = takeWeightedItem(pool, rng);
     options.push(selected);
     pool.splice(pool.indexOf(selected), 1);
   }
   return options;
 }
 
-function takeWeightedItem(candidates) {
-  const totalWeight = candidates.reduce((sum, item) => sum + getRewardWeight(item), 0);
-  let roll = Math.random() * totalWeight;
-  for (const item of candidates) {
-    roll -= getRewardWeight(item);
-    if (roll <= 0) return item;
-  }
-  return candidates.at(-1);
+function takeWeightedItem(candidates, rng = null) {
+  return takeWeightedItemWithRng(candidates, getRewardWeight, rng);
 }
 
 function getRewardWeight(item) {
