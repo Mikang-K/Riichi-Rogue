@@ -18,6 +18,17 @@ import {
   submitHand,
   getScoringTiles,
 } from "../src/game.js";
+import { nextDoraFace } from "../src/game/tile-utils.js";
+
+function assertFace(label, tile, suit, value) {
+  if (tile.suit !== suit || tile.value !== value) {
+    throw new Error(`${label} expected ${suit}${value}, got ${tile.suit}${tile.value}`);
+  }
+}
+
+assertFace("Number dora wrap", nextDoraFace({ suit: "m", value: 9 }), "m", 1);
+assertFace("Wind dora wrap", nextDoraFace({ suit: "z", value: "N" }), "z", "E");
+assertFace("Dragon dora wrap", nextDoraFace({ suit: "z", value: "C" }), "z", "P");
 
 const cases = [
   { name: "삼색동순", hand: "234m 234p 234s 345s 66p", includes: ["삼색동순"] },
@@ -135,12 +146,12 @@ if (run.doraState.indicators.length !== 5 || run.doraState.uraIndicators.length 
 
 const multiDoraState = {
   indicators: [
-    { suit: "m", value: 1, copyId: "dora-m1" },
-    { suit: "p", value: 2, copyId: "dora-p2" },
+    { suit: "m", value: 9, copyId: "dora-m9" },
+    { suit: "s", value: 4, copyId: "dora-s4" },
   ],
   uraIndicators: [
-    { suit: "s", value: 7, copyId: "ura-s7" },
-    { suit: "m", value: 1, copyId: "ura-m1" },
+    { suit: "p", value: 2, copyId: "ura-p2" },
+    { suit: "m", value: 9, copyId: "ura-m9" },
   ],
   revealedCount: 2,
 };

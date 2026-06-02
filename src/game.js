@@ -5,7 +5,7 @@ import { relicPool, relicRarities } from "./game/relics.js";
 import { evaluateYaku } from "./game/yaku-evaluator.js";
 import { createRogueYaku } from "./game/rogue-yaku-data.js";
 import { cloneRng, createRandomSeed, createSeededRng, randomId, shuffleWithRng, takeWeightedItemWithRng } from "./game/rng.js";
-import { HONORS, SUITS, countTiles, sameFace, sortTiles } from "./game/tile-utils.js";
+import { HONORS, SUITS, countTiles, nextDoraFace, sameFace, sortTiles } from "./game/tile-utils.js";
 
 export { augmentPool, augmentRarities, relicPool, relicRarities };
 
@@ -78,7 +78,7 @@ export function newRun(seed = createRandomSeed()) {
     deck: round.deck,
     hand: round.hand,
     selected: [],
-    dora: getVisibleDoraIndicators(round.doraState)[0],
+    dora: getVisibleDoraFaces(round.doraState)[0],
     doraState: round.doraState,
     deadWall: round.deadWall,
     kan: emptyKanState(),
@@ -111,7 +111,7 @@ export function newTitle() {
     deck: [],
     hand: [],
     selected: [],
-    dora: getVisibleDoraIndicators(doraState)[0],
+    dora: getVisibleDoraFaces(doraState)[0],
     doraState,
     deadWall: emptyDeadWall(),
     kan: emptyKanState(),
@@ -140,8 +140,8 @@ export function newTutorial() {
     selected: [],
     dora: fixedTile("m", 2, "tutorial-dora"),
     doraState: {
-      indicators: [fixedTile("m", 2, "tutorial-dora")],
-      uraIndicators: [fixedTile("p", 6, "tutorial-ura-dora")],
+      indicators: [fixedTile("m", 1, "tutorial-dora")],
+      uraIndicators: [fixedTile("p", 5, "tutorial-ura-dora")],
       revealedCount: 1,
     },
     deadWall: {
@@ -186,7 +186,7 @@ export function startRound(state) {
     deck: round.deck,
     hand: round.hand,
     selected: [],
-    dora: getVisibleDoraIndicators(round.doraState)[0],
+    dora: getVisibleDoraFaces(round.doraState)[0],
     doraState: round.doraState,
     deadWall: round.deadWall,
     kan: emptyKanState(),
@@ -207,8 +207,8 @@ function startTutorialRound(state, message = "연습국 시작. 손패에서 동
     selected: [],
     dora: fixedTile("m", 2, "tutorial-dora"),
     doraState: {
-      indicators: [fixedTile("m", 2, "tutorial-dora")],
-      uraIndicators: [fixedTile("p", 6, "tutorial-ura-dora")],
+      indicators: [fixedTile("m", 1, "tutorial-dora")],
+      uraIndicators: [fixedTile("p", 5, "tutorial-ura-dora")],
       revealedCount: 1,
     },
     deadWall: {
@@ -434,7 +434,7 @@ export function declareKan(state, faceKey) {
     ...state,
     hand,
     selected: [],
-    dora: getVisibleDoraIndicators(nextDoraState)[0],
+    dora: getVisibleDoraFaces(nextDoraState)[0],
     doraState: nextDoraState,
     deadWall: {
       rinshanTiles: deadWall.rinshanTiles,
@@ -826,6 +826,8 @@ export function scoreHand(tiles, dora, relics = [], context = {}) {
     doraHan: doraCount,
     doraIndicators: doraBreakdown.doraIndicators,
     uraDoraIndicators: doraBreakdown.uraDoraIndicators,
+    doraFaces: doraBreakdown.doraFaces,
+    uraDoraFaces: doraBreakdown.uraDoraFaces,
     regularDoraCount: doraBreakdown.regularCount,
     uraDoraCount: doraBreakdown.uraCount,
     doraScore,
@@ -1191,18 +1193,35 @@ export function getVisibleUraDoraIndicators(doraInput, context = {}) {
   return doraState.uraIndicators.slice(0, doraState.revealedCount);
 }
 
+export function getVisibleDoraFaces(doraInput) {
+  const indicators = getVisibleDoraIndicators(doraInput);
+  return shouldResolveDoraIndicators(doraInput) ? indicators.map(nextDoraFace) : indicators;
+}
+
+export function getVisibleUraDoraFaces(doraInput, context = {}) {
+  return getVisibleUraDoraIndicators(doraInput, context).map(nextDoraFace);
+}
+
 function getDoraBreakdown(tiles, doraInput, context) {
   const doraIndicators = getVisibleDoraIndicators(doraInput);
   const uraDoraIndicators = getVisibleUraDoraIndicators(doraInput, context);
-  const regularCount = countMatchingDora(tiles, doraIndicators);
-  const uraCount = countMatchingDora(tiles, uraDoraIndicators);
+  const doraFaces = getVisibleDoraFaces(doraInput);
+  const uraDoraFaces = getVisibleUraDoraFaces(doraInput, context);
+  const regularCount = countMatchingDora(tiles, doraFaces);
+  const uraCount = countMatchingDora(tiles, uraDoraFaces);
   return {
     doraIndicators,
     uraDoraIndicators,
+    doraFaces,
+    uraDoraFaces,
     regularCount,
     uraCount,
     totalCount: regularCount + uraCount,
   };
+}
+
+function shouldResolveDoraIndicators(doraInput) {
+  return Boolean(doraInput?.doraState || Array.isArray(doraInput?.indicators));
 }
 
 function countMatchingDora(tiles, indicators) {

@@ -6,8 +6,8 @@ import {
   canAct,
   getAvailableRiichi,
   getAvailableKans,
-  getVisibleDoraIndicators,
-  getVisibleUraDoraIndicators,
+  getVisibleDoraFaces,
+  getVisibleUraDoraFaces,
   getScoringTiles,
 } from "../../game.js";
 import { tileButton } from "./tile.js";
@@ -145,8 +145,8 @@ function renderTable(state, score) {
 }
 
 function renderDoraTiles(state) {
-  const dora = getVisibleDoraIndicators(state);
-  const uraDora = getVisibleUraDoraIndicators(state, {
+  const dora = getVisibleDoraFaces(state);
+  const uraDora = getVisibleUraDoraFaces(state, {
     includeUraDora: state.riichi?.active && state.riichi.phase === "ready",
   });
   const visible = [

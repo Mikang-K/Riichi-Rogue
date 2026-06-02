@@ -17,6 +17,16 @@ export function sameFace(a, b) {
   return a.suit === b.suit && a.value === b.value;
 }
 
+export function nextDoraFace(tile) {
+  if (tile.suit !== "z") {
+    return { suit: tile.suit, value: tile.value === 9 ? 1 : tile.value + 1 };
+  }
+
+  const sequence = WINDS.includes(tile.value) ? WINDS : DRAGONS;
+  const index = sequence.indexOf(tile.value);
+  return { suit: tile.suit, value: sequence[(index + 1) % sequence.length] };
+}
+
 export function countTiles(tiles) {
   const counts = new Map();
   tiles.forEach((tile) => counts.set(keyOf(tile), (counts.get(keyOf(tile)) ?? 0) + 1));
