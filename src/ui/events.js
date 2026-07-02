@@ -117,12 +117,16 @@ export function initEvents({ getState, setState, getUiState, setUiState, rerende
     if (tileId) {
       const state = getState();
       if (state.riichi?.phase === "selectingDiscard") {
-        setState(confirmRiichiDiscard(state, tileId));
+        const after = confirmRiichiDiscard(state, tileId);
+        setState(after);
+        if (after.riichi?.phase === "declared") playSfx("riichi", { muted: uiState.isMusicMuted });
         rerender();
         if (getState().riichi?.phase === "declared") scheduleRiichiAdvance();
         return;
       }
-      setState(toggleTile(state, tileId));
+      const after = toggleTile(state, tileId);
+      setState(after);
+      if (after !== state) playSfx("tile-select", { muted: uiState.isMusicMuted });
       rerender();
       return;
     }
@@ -134,7 +138,10 @@ export function initEvents({ getState, setState, getUiState, setUiState, rerende
     }
 
     if (shopOfferId && action === "buy-shop-offer") {
-      setState(buyShopOffer(getState(), shopOfferId));
+      const before = getState();
+      const after = buyShopOffer(before, shopOfferId);
+      setState(after);
+      if (after !== before && after.coins < before.coins) playSfx("shop-buy", { muted: uiState.isMusicMuted });
       rerender();
       return;
     }
@@ -150,7 +157,12 @@ export function initEvents({ getState, setState, getUiState, setUiState, rerende
         rerender();
         break;
       case "declare-riichi":
-        setState(declareRiichi(getState()));
+        {
+          const before = getState();
+          const after = declareRiichi(before);
+          setState(after);
+          if (after.riichi?.phase === "declared") playSfx("riichi", { muted: uiState.isMusicMuted });
+        }
         rerender();
         if (["declared", "drawing"].includes(getState().riichi?.phase)) scheduleRiichiAdvance();
         break;
@@ -160,7 +172,14 @@ export function initEvents({ getState, setState, getUiState, setUiState, rerende
         rerender();
         break;
       case "declare-kan":
-        setState(declareKan(getState(), kanFace));
+        {
+          const before = getState();
+          const after = declareKan(before, kanFace);
+          setState(after);
+          if ((after.kan?.declaredCount ?? 0) > (before.kan?.declaredCount ?? 0)) {
+            playSfx("kan", { muted: uiState.isMusicMuted });
+          }
+        }
         rerender();
         break;
       case "leave-shop":
@@ -168,7 +187,12 @@ export function initEvents({ getState, setState, getUiState, setUiState, rerende
         rerender();
         break;
       case "reroll-shop":
-        setState(rerollShop(getState()));
+        {
+          const before = getState();
+          const after = rerollShop(before);
+          setState(after);
+          if (after.coins < before.coins) playSfx("reroll", { muted: uiState.isMusicMuted });
+        }
         rerender();
         break;
       case "toggle-shop-lock":
@@ -182,7 +206,7 @@ export function initEvents({ getState, setState, getUiState, setUiState, rerende
           const after = submitHand(before);
           setState(after);
           const didSubmit = after !== before;
-          if (didSubmit && ["reward", "won", "tutorialComplete"].includes(after.status)) {
+          if (didSubmit && ["reward", "shop", "won", "tutorialComplete"].includes(after.status)) {
             playSfx("submit-success", { muted: uiState.isMusicMuted });
           } else if (didSubmit) {
             playSfx("submit-fail", { muted: uiState.isMusicMuted });

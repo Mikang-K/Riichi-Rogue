@@ -147,5 +147,45 @@
     "text": "상점마다 패 추가 횟수 -1, 역 배율 +0.5",
     "effect": { "type": "flatYakuMultiplierBonus", "multiplier": 0.5 },
     "playerEffect": { "type": "shopEditLimitDelta", "editType": "addTile", "delta": -1 }
+  },
+  {
+    "id": "riichi-lamp",
+    "name": "리치 등불",
+    "rarity": "rare",
+    "text": "리치 상태로 완성하면 역 배율 +0.35",
+    "flavor": "불을 켜는 순간, 버릴 수 있는 길은 하나뿐입니다.",
+    "effect": { "type": "riichiYakuMultiplierBonus", "multiplier": 0.35 }
+  },
+  {
+    "id": "kan-tablet",
+    "name": "깡패 석판",
+    "rarity": "rare",
+    "text": "선언한 깡 1회마다 역 점수 +20점",
+    "flavor": "네 장이 모이면 탁자 아래의 낡은 문양이 빛납니다.",
+    "effect": { "type": "kanCountScoreBonus", "scorePerKan": 20 }
+  },
+  {
+    "id": "thin-wall-map",
+    "name": "얇은 패산 지도",
+    "rarity": "legendary",
+    "text": "패 풀이 80장 이하라면 전체 배율 +0.45",
+    "flavor": "버린 패가 많은 런일수록 남은 길은 선명해집니다.",
+    "effect": { "type": "thinWallGlobalMultiplierBonus", "threshold": 80, "multiplier": 0.45 }
+  },
+  {
+    "id": "dora-astrolabe",
+    "name": "도라 성반",
+    "rarity": "legendary",
+    "text": "도라 1장마다 역 점수 +24점",
+    "flavor": "붉은 점 하나가 밤하늘의 계산을 바꿉니다.",
+    "effect": { "type": "doraCountScoreBonus", "scorePerDora": 24 }
+  },
+  {
+    "id": "flush-inkstone",
+    "name": "청색 벼루",
+    "rarity": "rare",
+    "text": "수패가 한 종류뿐이면 전체 배율 +0.55",
+    "flavor": "한 가지 먹으로 밀어붙인 손패는 흔들림이 적습니다.",
+    "effect": { "type": "flushGlobalMultiplierBonus", "multiplier": 0.55 }
   }
 ]

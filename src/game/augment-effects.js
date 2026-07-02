@@ -42,6 +42,14 @@ export const augmentEffectHandlers = {
     tileMultiplierBonus:
       countGroupTiles(augment, tiles) >= augment.effect.threshold ? augment.effect.multiplier : 0,
   }),
+
+  doraCountScoreBonus: ({ augment, doraCount }) => ({
+    yakuScoreBonus: doraCount * augment.effect.scorePerDora,
+  }),
+
+  kanCountScoreBonus: ({ augment, kanCount = 0 }) => ({
+    yakuScoreBonus: kanCount * augment.effect.scorePerKan,
+  }),
 };
 
 function hasTargetYaku(augment, yaku) {

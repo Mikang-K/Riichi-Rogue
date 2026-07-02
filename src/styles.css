@@ -373,6 +373,18 @@ h2 {
   font-size: 1.45rem;
 }
 
+.round-rule {
+  grid-column: 1 / -1;
+  min-height: 74px;
+}
+
+.round-rule strong {
+  display: block;
+  color: #fff4c7;
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
 .dora-tile {
   display: inline-flex;
   align-items: center;
@@ -447,6 +459,7 @@ h2 {
 }
 
 .tile {
+  position: relative;
   display: grid;
   place-items: center;
   width: var(--mahjong-tile-width);
@@ -475,6 +488,64 @@ h2 {
 
 .tile.honor {
   color: #2f2f2f;
+}
+
+.tile-enhanced {
+  filter: saturate(1.08) contrast(1.04);
+}
+
+.tile-enhanced::before,
+.tile-dora::after,
+.tile-ura-dora::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 12px;
+  pointer-events: none;
+}
+
+.tile-enhanced::before {
+  border: 2px solid rgba(255, 217, 130, 0.82);
+  box-shadow: 0 0 16px rgba(243, 193, 97, 0.3);
+}
+
+.tile-dora::after {
+  border: 2px solid rgba(230, 96, 78, 0.86);
+}
+
+.tile-ura-dora::after {
+  border: 2px dashed rgba(134, 177, 255, 0.9);
+}
+
+.tile-badge {
+  position: absolute;
+  right: -5px;
+  min-width: 24px;
+  padding: 2px 4px;
+  border-radius: 8px;
+  background: #1b1d17;
+  color: #fff8eb;
+  font-size: 0.58rem;
+  font-weight: 950;
+  line-height: 1;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.34);
+  pointer-events: none;
+}
+
+.tile-badge-enhance {
+  top: -7px;
+  background: #ffd982;
+  color: #1b1d17;
+}
+
+.tile-badge-dora {
+  bottom: -7px;
+  background: #d95143;
+}
+
+.tile-badge-ura {
+  bottom: 10px;
+  background: #4269b2;
 }
 
 .tile.selected {
@@ -757,6 +828,14 @@ h2 {
 .reward span {
   color: #cbd5c7;
   font-size: 0.9rem;
+}
+
+.relic-flavor {
+  color: #fff4c7;
+  font-size: 0.82rem;
+  font-style: italic;
+  line-height: 1.45;
+  opacity: 0.86;
 }
 
 .augment {

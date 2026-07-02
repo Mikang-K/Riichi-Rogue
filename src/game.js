@@ -19,11 +19,31 @@ const TILE_GLYPHS = {
 };
 
 export const rounds = [
-  { name: "동 1국", targetScore: 80 },
-  { name: "동 2국", targetScore: 105 },
-  { name: "동 3국", targetScore: 130 },
-  { name: "남입", targetScore: 165 },
-  { name: "오라스", targetScore: 210 },
+  {
+    name: "동 1국",
+    targetScore: 80,
+    modifier: { name: "첫 동풍", text: "기본 규칙으로 빌드 방향을 잡습니다." },
+  },
+  {
+    name: "동 2국",
+    targetScore: 105,
+    modifier: { name: "도라 압박", text: "도라가 2장 공개된 상태로 시작합니다.", extraDoraRevealed: 1 },
+  },
+  {
+    name: "동 3국",
+    targetScore: 130,
+    modifier: { name: "짧은 패산", text: "교환 횟수 -2. 클리어하면 추가 코인 +2.", maxDiscardsDelta: -2, clearCoinBonus: 2 },
+  },
+  {
+    name: "남입",
+    targetScore: 165,
+    modifier: { name: "깡의 문", text: "깡을 선언한 손패는 역 점수 +30점.", kanYakuScoreBonus: 30 },
+  },
+  {
+    name: "오라스",
+    targetScore: 210,
+    modifier: { name: "최후의 리치", text: "리치 성공 시 역 배율 +0.25.", riichiYakuMultiplierBonus: 0.25 },
+  },
 ];
 
 export const tutorialRound = { name: "연습국", targetScore: 100 };
@@ -69,7 +89,9 @@ const MAX_SHOP_REROLL_PRICE = 6;
 export function newRun(seed = createRandomSeed()) {
   const rng = createSeededRng(seed);
   const playerTiles = buildStartingPlayerTiles(rng);
-  const round = createRoundDeal(playerTiles, rng);
+  const roundIndex = 0;
+  const round = applyRoundSetup(createRoundDeal(playerTiles, rng), getRoundDefinition(roundIndex));
+  const roundDiscardLimit = getRoundDiscardLimit(roundIndex, BASE_MAX_DISCARDS);
 
   return {
     mode: "main",
@@ -82,9 +104,10 @@ export function newRun(seed = createRandomSeed()) {
     doraState: round.doraState,
     deadWall: round.deadWall,
     kan: emptyKanState(),
-    roundIndex: 0,
+    roundIndex,
     maxDiscards: BASE_MAX_DISCARDS,
-    discardsLeft: BASE_MAX_DISCARDS,
+    roundDiscardLimit,
+    discardsLeft: roundDiscardLimit,
     riichi: emptyRiichiState(),
     relics: [],
     augments: [],
@@ -94,7 +117,7 @@ export function newRun(seed = createRandomSeed()) {
     coins: 0,
     status: "startReward",
     rewardOptions: getStartRewardOptions(rng),
-    message: "시작 유물을 하나 고르세요.",
+    message: "시작 유물을 하나 고르세요. 각 국마다 다른 압박 규칙이 열립니다.",
   };
 }
 
@@ -117,6 +140,7 @@ export function newTitle() {
     kan: emptyKanState(),
     roundIndex: 0,
     maxDiscards: 0,
+    roundDiscardLimit: 0,
     discardsLeft: 0,
     riichi: emptyRiichiState(),
     relics: [],
@@ -156,6 +180,7 @@ export function newTutorial() {
     kan: emptyKanState(),
     roundIndex: 0,
     maxDiscards: TUTORIAL_MAX_DISCARDS,
+    roundDiscardLimit: TUTORIAL_MAX_DISCARDS,
     discardsLeft: TUTORIAL_MAX_DISCARDS,
     riichi: emptyRiichiState(),
     relics: [],
@@ -178,7 +203,12 @@ export function newTutorial() {
 
 export function startRound(state) {
   const rng = cloneRng(state.rng);
-  const round = createRoundDeal(state.playerTiles?.length ? state.playerTiles : buildStartingPlayerTiles(rng), rng);
+  const roundDefinition = getRoundDefinition(state.roundIndex);
+  const round = applyRoundSetup(
+    createRoundDeal(state.playerTiles?.length ? state.playerTiles : buildStartingPlayerTiles(rng), rng),
+    roundDefinition,
+  );
+  const roundDiscardLimit = getRoundDiscardLimit(state.roundIndex, state.maxDiscards);
   return {
     ...state,
     rng,
@@ -190,11 +220,12 @@ export function startRound(state) {
     doraState: round.doraState,
     deadWall: round.deadWall,
     kan: emptyKanState(),
-    discardsLeft: state.maxDiscards,
+    roundDiscardLimit,
+    discardsLeft: roundDiscardLimit,
     riichi: emptyRiichiState(),
     shop: null,
     status: "playing",
-    message: `${rounds[state.roundIndex].name} 시작.`,
+    message: `${roundDefinition.name} 시작. ${roundDefinition.modifier?.text ?? ""}`.trim(),
   };
 }
 
@@ -223,6 +254,7 @@ function startTutorialRound(state, message = "연습국 시작. 손패에서 동
     kan: emptyKanState(),
     roundIndex: 0,
     maxDiscards: state.maxDiscards,
+    roundDiscardLimit: state.maxDiscards,
     discardsLeft: state.maxDiscards,
     riichi: emptyRiichiState(),
     status: "tutorial",
@@ -498,7 +530,7 @@ function finishScoredHand(state, result, successMessage = null) {
   }
 
   const nextRoundIndex = state.roundIndex + 1;
-  const coinReward = getRoundClearCoins(result.totalScore, targetScore);
+  const coinReward = getRoundClearCoins(result.totalScore, targetScore, getRoundDefinition(state.roundIndex).modifier);
   const reportedState = appendRoundReport(state, result, targetScore, "cleared", coinReward);
   if (nextRoundIndex >= rounds.length) {
     return {
@@ -778,16 +810,21 @@ export function scoreHand(tiles, dora, relics = [], context = {}) {
   const doraScore = analysis.isComplete ? doraCount * DORA_SCORE : 0;
   const totalHan = yaku.reduce((sum, item) => sum + item.han, 0) + (analysis.isComplete ? doraCount : 0);
   const yakuCompletionMultiplier = getYakuCompletionMultiplier(yaku, totalHan);
-  const scoreContext = { tiles, analysis, yaku, counts, doraCount, doraHan: doraCount };
+  const scoreContext = { ...context, tiles, analysis, yaku, counts, doraCount, doraHan: doraCount };
   const relicBonuses = relics
     .map((relic) => ({ relic, bonus: getRelicScoreBonus(relic, scoreContext) }))
     .filter((item) => hasScoreBonus(item.bonus));
   const augmentBonuses = (context.augments ?? [])
     .map((augment) => ({ augment, bonus: getAugmentScoreBonus(augment, scoreContext) }))
     .filter((item) => hasScoreBonus(item.bonus));
+  const roundModifierBonus = getRoundModifierScoreBonus(context.roundModifier, scoreContext);
   const riichiMultiplierBonus = getRiichiMultiplierBonus(context);
   const bonusTotals = addScoreBonuses(
-    [...relicBonuses, ...augmentBonuses].reduce(addScoreBonuses, emptyScoreBonus()),
+    [
+      ...relicBonuses,
+      ...augmentBonuses,
+      ...(hasScoreBonus(roundModifierBonus) ? [{ bonus: roundModifierBonus }] : []),
+    ].reduce(addScoreBonuses, emptyScoreBonus()),
     { yakuMultiplierBonus: riichiMultiplierBonus },
   );
   const tileMultiplier = DEFAULT_MULTIPLIER + bonusTotals.tileMultiplierBonus;
@@ -833,6 +870,10 @@ export function scoreHand(tiles, dora, relics = [], context = {}) {
     doraScore,
     relicBonuses,
     augmentBonuses,
+    roundModifierBonus: hasScoreBonus(roundModifierBonus) ? {
+      name: context.roundModifier?.name ?? "국 규칙",
+      bonus: roundModifierBonus,
+    } : null,
     relicHan: relicBonuses.map(({ relic, bonus }) => ({ relic, han: Math.floor(bonus.yakuScoreBonus / LEGACY_HAN_SCORE) })).filter((item) => item.han > 0),
     tileScore,
     tileScoreBonus: bonusTotals.tileScoreBonus,
@@ -981,6 +1022,14 @@ function getAugmentScoreBonus(augment, context) {
   return normalizeScoreBonus(augment.effect(context));
 }
 
+function getRoundModifierScoreBonus(modifier, context) {
+  if (!modifier) return emptyScoreBonus();
+  return normalizeScoreBonus({
+    yakuScoreBonus: (context.kanCount ?? 0) > 0 ? modifier.kanYakuScoreBonus ?? 0 : 0,
+    yakuMultiplierBonus: context.riichi ? modifier.riichiYakuMultiplierBonus ?? 0 : 0,
+  });
+}
+
 function normalizeScoreBonus(bonus) {
   return { ...emptyScoreBonus(), ...bonus };
 }
@@ -998,9 +1047,11 @@ function getRiichiMultiplierBonus(context) {
 }
 
 function getScoreContext(state) {
+  const roundDefinition = getRoundDefinition(state.roundIndex);
   const context = {
     augments: state.augments ?? [],
     playerTiles: state.playerTiles ?? [],
+    roundModifier: roundDefinition.modifier,
     rinshan: state.kan?.rinshanReady === true,
     kanCount: state.kan?.declaredCount ?? 0,
     kanSets: state.kan?.sets ?? [],
@@ -1053,13 +1104,15 @@ function emptyDeadWall() {
   };
 }
 
-function getRoundClearCoins(totalScore, targetScore) {
+function getRoundClearCoins(totalScore, targetScore, modifier = null) {
   const overScore = Math.max(0, totalScore - targetScore);
   const bonusCoins = Math.min(MAX_OVER_SCORE_BONUS_COINS, Math.floor(overScore / OVER_SCORE_PER_BONUS_COIN));
+  const ruleCoins = modifier?.clearCoinBonus ?? 0;
   return {
     baseCoins: ROUND_CLEAR_BASE_COINS,
     bonusCoins,
-    totalCoins: ROUND_CLEAR_BASE_COINS + bonusCoins,
+    ruleCoins,
+    totalCoins: ROUND_CLEAR_BASE_COINS + bonusCoins + ruleCoins,
     overScore,
   };
 }
@@ -1068,6 +1121,7 @@ function getTutorialClearCoins(totalScore, targetScore) {
   return {
     baseCoins: TUTORIAL_CLEAR_COINS,
     bonusCoins: 0,
+    ruleCoins: 0,
     totalCoins: TUTORIAL_CLEAR_COINS,
     overScore: Math.max(0, totalScore - targetScore),
   };
@@ -1077,6 +1131,7 @@ function emptyCoinReward(totalScore, targetScore) {
   return {
     baseCoins: 0,
     bonusCoins: 0,
+    ruleCoins: 0,
     totalCoins: 0,
     overScore: Math.max(0, totalScore - targetScore),
   };
@@ -1130,6 +1185,27 @@ function createRoundDeal(playerTiles, rng = null) {
     doraState: wall.doraState,
     deadWall: wall.deadWall,
   };
+}
+
+function applyRoundSetup(round, roundDefinition) {
+  const extraDoraRevealed = roundDefinition?.modifier?.extraDoraRevealed ?? 0;
+  if (extraDoraRevealed <= 0) return round;
+  return {
+    ...round,
+    doraState: {
+      ...round.doraState,
+      revealedCount: Math.min(round.doraState.indicators.length, round.doraState.revealedCount + extraDoraRevealed),
+    },
+  };
+}
+
+function getRoundDefinition(roundIndex) {
+  return rounds[roundIndex] ?? rounds[rounds.length - 1];
+}
+
+function getRoundDiscardLimit(roundIndex, baseMaxDiscards) {
+  const modifier = getRoundDefinition(roundIndex)?.modifier;
+  return Math.max(1, baseMaxDiscards + (modifier?.maxDiscardsDelta ?? 0));
 }
 
 function drawRoundHand(deck, count) {
@@ -1241,10 +1317,15 @@ function applyRelicPlayerEffect(state, relic) {
     maxDiscards: state.maxDiscards,
     shopEditLimits: state.shopEditLimits ?? { ...BASE_SHOP_EDIT_LIMITS },
   });
+  const roundDiscardLimit = getRoundDiscardLimit(state.roundIndex, player.maxDiscards);
+  const shouldRefillCurrentRound = state.status === "startReward";
   return {
     ...state,
     maxDiscards: player.maxDiscards,
-    discardsLeft: Math.min(state.discardsLeft, player.maxDiscards),
+    roundDiscardLimit,
+    discardsLeft: shouldRefillCurrentRound
+      ? roundDiscardLimit
+      : Math.min(state.discardsLeft, roundDiscardLimit + (state.riichi?.bonusDiscards ?? 0)),
     shopEditLimits: player.shopEditLimits ?? state.shopEditLimits,
   };
 }

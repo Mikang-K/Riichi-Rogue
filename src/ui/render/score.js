@@ -10,6 +10,7 @@ export function renderScore(score, options = {}) {
   const augments = score.augmentBonuses.length
     ? score.augmentBonuses.map(renderAugmentBonus).join("")
     : "";
+  const roundRule = score.roundModifierBonus ? renderNamedBonus(score.roundModifierBonus.name, score.roundModifierBonus.bonus) : "";
 
   return `
     <ul class="score-list">
@@ -20,6 +21,7 @@ export function renderScore(score, options = {}) {
       <li><span>${renderTermText("도라")}</span><strong>${score.doraScore}점 (${score.regularDoraCount ?? score.doraCount}장${score.uraDoraCount ? `, ${renderTermText("뒷도라")} ${score.uraDoraCount}장` : ""})</strong></li>
       ${relics}
       ${augments}
+      ${roundRule}
       ${score.riichiMultiplierBonus ? `<li><span>${renderTermText("리치 보너스")}</span><strong>x+${formatMultiplier(score.riichiMultiplierBonus)}</strong></li>` : ""}
       <li><span>${renderTermText("역 배율")}</span><strong>x${formatMultiplier(score.yakuMultiplier)}</strong></li>
       <li><span>${renderTermText("완성 배율")}</span><strong>x${formatMultiplier(score.yakuCompletionMultiplier)}</strong></li>
@@ -77,6 +79,7 @@ export function renderRelic(relic) {
         <small>${formatRarity(relic.rarity)}</small>
       </div>
       <span>${renderTermText(relic.text)}</span>
+      ${relic.flavor ? `<em class="relic-flavor">${renderTermText(relic.flavor)}</em>` : ""}
     </div>
   `;
 }
@@ -89,6 +92,7 @@ export function renderAugment(augment) {
         <small>${formatRarity(augment.rarity)}</small>
       </div>
       <span>${renderTermText(augment.text)}</span>
+      ${augment.flavor ? `<em class="relic-flavor">${renderTermText(augment.flavor)}</em>` : ""}
     </div>
   `;
 }

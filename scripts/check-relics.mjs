@@ -26,6 +26,9 @@ const requiredEffectFields = {
   dragonTripletScoreBonus: ["scorePerTriplet"],
   yakumanGlobalMultiplierBonus: ["multiplier"],
   flatYakuMultiplierBonus: ["multiplier"],
+  kanCountScoreBonus: ["scorePerKan"],
+  riichiYakuMultiplierBonus: ["multiplier"],
+  thinWallGlobalMultiplierBonus: ["threshold", "multiplier"],
 };
 const requiredPlayerEffectFields = {
   maxDiscardsDelta: ["delta"],

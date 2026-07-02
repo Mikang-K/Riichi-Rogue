@@ -95,6 +95,18 @@ export const relicEffectHandlers = {
   flatYakuMultiplierBonus: ({ relic }) => ({
     yakuMultiplierBonus: relic.effect.multiplier,
   }),
+
+  kanCountScoreBonus: ({ relic, kanCount = 0 }) => ({
+    yakuScoreBonus: kanCount * relic.effect.scorePerKan,
+  }),
+
+  riichiYakuMultiplierBonus: ({ relic, riichi }) => ({
+    yakuMultiplierBonus: riichi ? relic.effect.multiplier : 0,
+  }),
+
+  thinWallGlobalMultiplierBonus: ({ relic, playerTiles = [] }) => ({
+    globalMultiplierBonus: playerTiles.length <= relic.effect.threshold ? relic.effect.multiplier : 0,
+  }),
 };
 
 export const relicPlayerEffectHandlers = {

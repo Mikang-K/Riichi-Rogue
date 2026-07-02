@@ -22,6 +22,8 @@ const requiredEffectFields = {
   targetTileThresholdMultiplierBonus: ["threshold", "multiplier"],
   tileGroupScoreBonus: ["scorePerTile"],
   tileGroupThresholdMultiplierBonus: ["threshold", "multiplier"],
+  doraCountScoreBonus: ["scorePerDora"],
+  kanCountScoreBonus: ["scorePerKan"],
 };
 
 const errors = [];

@@ -79,4 +79,50 @@
     "effect": { "type": "tileGroupThresholdMultiplierBonus", "threshold": 10, "multiplier": 0.35 },
     "text": "2~8 수패가 10장 이상이면 패 배율 +0.35"
   }
+,
+  {
+    "id": "riichi-stance",
+    "name": "리치 자세",
+    "rarity": "common",
+    "target": { "type": "yaku", "id": "riichi" },
+    "effect": { "type": "targetYakuScoreBonus", "score": 16 },
+    "text": "리치가 붙으면 역 점수 +16점",
+    "flavor": "손을 멈추는 것도 공격입니다."
+  },
+  {
+    "id": "toitoi-engine",
+    "name": "커츠 엔진",
+    "rarity": "rare",
+    "target": { "type": "yaku", "id": "toitoi" },
+    "effect": { "type": "targetYakuMultiplierBonus", "multiplier": 0.3 },
+    "text": "또이또이가 붙으면 역 배율 +0.3",
+    "flavor": "같은 패가 반복될수록 소리가 무거워집니다."
+  },
+  {
+    "id": "dora-chase",
+    "name": "도라 추적",
+    "rarity": "rare",
+    "target": { "type": "tileGroup", "group": "simple" },
+    "effect": { "type": "doraCountScoreBonus", "scorePerDora": 14 },
+    "text": "도라 1장마다 역 점수 +14점",
+    "flavor": "보이는 빛을 끝까지 따라갑니다."
+  },
+  {
+    "id": "kan-spark",
+    "name": "깡 불꽃",
+    "rarity": "rare",
+    "target": { "type": "tileGroup", "group": "terminal" },
+    "effect": { "type": "kanCountScoreBonus", "scorePerKan": 18 },
+    "text": "선언한 깡 1회마다 역 점수 +18점",
+    "flavor": "네 장의 충돌이 점수판에 불꽃을 남깁니다."
+  },
+  {
+    "id": "souzu-bloom",
+    "name": "삭수 개화",
+    "rarity": "common",
+    "target": { "type": "tileGroup", "group": "souzu" },
+    "effect": { "type": "tileGroupScoreBonus", "scorePerTile": 2 },
+    "text": "삭수 1장마다 패 점수 +2점",
+    "flavor": "대나무 무늬가 많은 손패일수록 조용히 자랍니다."
+  }
 ]

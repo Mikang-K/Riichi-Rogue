@@ -28,6 +28,7 @@ export function renderGameView(state, uiState) {
     kanSets: state.kan?.sets ?? [],
     augments: state.augments ?? [],
     playerTiles: state.playerTiles ?? [],
+    roundModifier: round.modifier,
   };
   const score = scoreHand(
     getScoringTiles(state),
@@ -96,12 +97,18 @@ function renderStatusGrid(state, round) {
         <span class="label">${renderTermText("코인")}</span>
         <strong>${state.coins}</strong>
       </article>
+      ${round.modifier?.text ? `
+        <article class="panel compact round-rule">
+          <span class="label">${renderTermText(round.modifier.name ?? "국 규칙")}</span>
+          <strong>${renderTermText(round.modifier.text)}</strong>
+        </article>
+      ` : ""}
     </section>
   `;
 }
 
 function getVisibleDiscardLimit(state) {
-  return state.maxDiscards + (state.riichi?.bonusDiscards ?? 0);
+  return (state.roundDiscardLimit ?? state.maxDiscards) + (state.riichi?.bonusDiscards ?? 0);
 }
 
 function renderTable(state, score) {
@@ -126,6 +133,8 @@ function renderTable(state, score) {
             ${state.hand.map((tile) => tileButton(tile, state.selected, state.riichi, state.kan, kanCandidateKeys, riichiCandidates, {
               tutorialTarget: tile.copyId === "tutorial-discard" ? "discard-tile" : "",
               isTutorialTarget: tutorialTarget === "discard-tile" && tile.copyId === "tutorial-discard",
+              isDora: score.doraFaces.some((doraTile) => isSameFace(tile, doraTile)),
+              isUraDora: score.uraDoraFaces.some((doraTile) => isSameFace(tile, doraTile)),
             })).join("")}
           </div>
           ${renderRiichiTrace(state)}
@@ -156,6 +165,10 @@ function renderDoraTiles(state) {
   return visible.length
     ? visible.map(({ tile, label }) => `<span title="${label}: ${tileName(tile)}">${renderTileFace(tile)}</span>`).join("")
     : "-";
+}
+
+function isSameFace(a, b) {
+  return a?.suit === b?.suit && a?.value === b?.value;
 }
 
 function renderKanSets(state) {

@@ -47,9 +47,28 @@ export function playSfx(name, { muted } = {}) {
 
   const now = context.currentTime;
   switch (name) {
+    case "tile-select":
+      playTone(context, { start: now, frequency: 560, endFrequency: 640, duration: 0.045, type: "triangle", volume: 0.055 });
+      break;
     case "exchange":
       playTone(context, { start: now, frequency: 420, endFrequency: 620, duration: 0.09, type: "triangle", volume: 0.12 });
       playTone(context, { start: now + 0.055, frequency: 760, duration: 0.07, type: "sine", volume: 0.08 });
+      break;
+    case "riichi":
+      playTone(context, { start: now, frequency: 392, duration: 0.08, type: "sine", volume: 0.09 });
+      playTone(context, { start: now + 0.08, frequency: 587.33, duration: 0.12, type: "triangle", volume: 0.1 });
+      break;
+    case "kan":
+      playTone(context, { start: now, frequency: 180, endFrequency: 260, duration: 0.12, type: "square", volume: 0.08 });
+      playTone(context, { start: now + 0.06, frequency: 720, duration: 0.08, type: "triangle", volume: 0.075 });
+      break;
+    case "shop-buy":
+      playTone(context, { start: now, frequency: 659.25, duration: 0.07, type: "sine", volume: 0.08 });
+      playTone(context, { start: now + 0.07, frequency: 880, duration: 0.1, type: "triangle", volume: 0.085 });
+      break;
+    case "reroll":
+      playTone(context, { start: now, frequency: 330, endFrequency: 520, duration: 0.07, type: "triangle", volume: 0.07 });
+      playTone(context, { start: now + 0.045, frequency: 520, endFrequency: 330, duration: 0.07, type: "triangle", volume: 0.06 });
       break;
     case "submit-success":
       playTone(context, { start: now, frequency: 523.25, duration: 0.08, type: "sine", volume: 0.1 });
